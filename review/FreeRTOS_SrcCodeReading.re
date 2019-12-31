@@ -1,18 +1,18 @@
-動機
-- RTOS(Real Time OS)について知りたい
-- Arduino UNOで動くRTOSがあるらしい。実行ファイルのサイズが7kBらしい。これなら読めるのでは？
+= 動機
+* RTOS(Real Time OS)について知りたい
+* Arduino UNOで動くRTOSがあるらしい。実行ファイルのサイズが7kBらしい。これなら読めるのでは？
 
-対象バージョン
-- Arduino_FreeRTOS_Library
-  - https://github.com/feilipu/Arduino_FreeRTOS_Library.git
-    - 10.1.1-1
-- FreeRTOS
-  - 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
-  - FreeRTOS_Reference_Manual_V10.0.0.pdf
+= 対象バージョン
+* Arduino_FreeRTOS_Library
+  * https://github.com/feilipu/Arduino_FreeRTOS_Library.git
+    * 10.1.1-1
+* FreeRTOS
+  * 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
+  * FreeRTOS_Reference_Manual_V10.0.0.pdf
 - H/W
   - Arduino UNO(ATMega328p)
 
-方針
+= 方針
 - 最初にコードを引用し、そのあと解説を加える
 - コメントは適宜削除
 - #if defined() ~ #endif は該当する箇所のみ記述し、適宜削除。
