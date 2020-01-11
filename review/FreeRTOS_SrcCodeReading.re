@@ -1,88 +1,92 @@
-= 動機
-* RTOS(Real Time OS)について知りたい
-* Arduino UNOで動くRTOSがあるらしい。実行ファイルのサイズが7kBらしい。これなら読めるのでは？
 
-= 対象バージョン
-* Arduino_FreeRTOS_Library
-  * https://github.com/feilipu/Arduino_FreeRTOS_Library.git
-    * 10.1.1-1
-* FreeRTOS
-  * 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
-  * FreeRTOS_Reference_Manual_V10.0.0.pdf
-- H/W
-  - Arduino UNO(ATMega328p)
+= (hoga)
 
-= 方針
-- 最初にコードを引用し、そのあと解説を加える
-- コメントは適宜削除
-- #if defined() ~ #endif は該当する箇所のみ記述し、適宜削除。
-- Config は FreeRTOSConfig.h のデフォルト値に従う。デフォルト値以外は、補足であつかうかも。
+== 動機
+ * RTOS(Real Time OS)について知りたい
+ * Arduino UNOで動くRTOSがあるらしい。実行ファイルのサイズが7kBらしい。これなら読めるのでは？
 
-ファイル一覧と概要
-|name|description|
-|---|---|
-|Arduino_FreeRTOS.h|hoge|
-|croutine.c||
-|croutine.h||
-|event_groups.c||
-|event_groups.h||
-|FreeRTOSConfig.h||
-|FreeRTOSVariant.h||
-|heap_3.c||
-|list.c||
-|list.h||
-|message_buffer.h||
-|mpu_wrappers.h||
-|port.c||
-|portable.h||
-|portmacro.h||
-|projdefs.h||
-|queue.c||
-|queue.h||
-|semphr.h||
-|stack_macros.h||
-|stream_buffer.c||
-|stream_buffer.h||
-|task.h||
-|tasks.c||
-|timers.c||
-|timers.h||
-|variantHooks.cpp||
-|
+== 対象バージョン
+ * Arduino_FreeRTOS_Library
+ ** https://github.com/feilipu/Arduino_FreeRTOS_Library.git
+ *** 10.1.1-1
+ * FreeRTOS
+ ** 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
+ ** FreeRTOS_Reference_Manual_V10.0.0.pdf
+ * H/W
+ ** Arduino UNO(ATMega328p)
 
-変数命名規則
-- p
-- r
-- v
+== 方針
+ * 最初にコードを引用し、そのあと解説を加える
+ * コメントは適宜削除
+ * #if defined() ~ #endif は該当する箇所のみ記述し、適宜削除。
+ * Config は FreeRTOSConfig.h のデフォルト値に従う。デフォルト値以外は、補足であつかうかも。
 
-関数命名規則
-- 'v' で始まる関数の戻り値は void
-- 'p' で始まる関数の戻り値は pointer
-- 'x' で始まる関数の戻り値は BaseType_t
-- Task で始まる関数の実体は、tasks.c に記述されている
+//table[fig1][ファイル一覧と概要]{
+name description
+-------------------------
+Arduino_FreeRTOS.h hoge
+croutine.c         hoge
+croutine.h||
+event_groups.c||
+event_groups.h||
+FreeRTOSConfig.h||
+FreeRTOSVariant.h||
+heap_3.c||
+list.c||
+list.h||
+message_buffer.h||
+mpu_wrappers.h||
+port.c||
+portable.h||
+portmacro.h||
+projdefs.h||
+queue.c||
+queue.h||
+semphr.h||
+stack_macros.h||
+stream_buffer.c||
+stream_buffer.h||
+task.h||
+tasks.c||
+timers.c||
+timers.h||
+variantHooks.cpp||
+//}
 
-ソースコードの引用方法
-- 下記のような関数があるとき、すべてを一度に引用すると見にくいので、部分的に引用して説明する。
-```c
+== 変数命名規則
+ * p
+ * r
+ * v
+
+== 関数命名規則
+ * 'v' で始まる関数の戻り値は void
+ * 'p' で始まる関数の戻り値は pointer
+ * 'x' で始まる関数の戻り値は BaseType_t
+ * Task で始まる関数の実体は、tasks.c に記述されている
+
+== ソースコードの引用方法
+ * 下記のような関数があるとき、すべてを一度に引用すると見にくいので、部分的に引用して説明する。
+
+//emlist{
 void func(void) {
     aaa()
     bbb()
     ccc()
 }
-```
+//}
 
 例えば, aaa(), bbb(), ccc() を別々に引用し説明するときは下記のように ... で省略していることを明記する。
 
-```c
+//emlist{
 void func(void) {
     aaa()
 
     ...
 }
-```
-- aaa() についての説明
+//}
+ * aaa() についての説明
 
-```c
+//emlist{
 void func(void) {
     ...
 
@@ -90,28 +94,26 @@ void func(void) {
 
     ...
 }
-```
-- bbb() についての説明
+//}
+ * bbb() についての説明
 
-```c
+//emlist{
 void func(void) {
     ...
 
     ccc()
 }
-```
-- ccc() についての説明
+//}
+ * ccc() についての説明
 
----
-ここからソースコードリーディング
-<!-- TODO -->
+
+== ここからソースコードリーディング
+
 なぜ、variantHook.cpp から読み始めるか
 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
 に書いてある
 
-# variantHook.cpp::void initVariant(void)
-
-```cpp
+//listnum[hoge][variantHook.cpp::void initVariant(void)][c]{
 void initVariant(void) __attribute__ ((OS_main));
 void initVariant(void)
 {
@@ -122,13 +124,13 @@ void initVariant(void)
     setup();        // the normal Arduino setup() function is run here.
     vTaskStartScheduler(); // initialise and run the freeRTOS scheduler. Execution should never return here.
 }
-```
-- __attribute__ ((OS_main)) は、最初にコールされる関数を指定していると思うが要確認。 <!-- TODO -->
-- USBCON は未定義。
-- `setup()`は、.ino でユーザが記述する`setup()`関数。
+//}
 
-# tasks.c::void vTaskStartScheduler( void ), 1/6
-```c
+ * __attribute__ ((OS_main)) は、最初にコールされる関数を指定していると思うが要確認。 <!-- TODO -->
+ * USBCON は未定義。
+ * `setup()`は、.ino でユーザが記述する`setup()`関数。
+
+//listnum[vTaskStartScheduler_1][tasks.c::void vTaskStartScheduler( void ), 1/6][c]{
 void vTaskStartScheduler( void )
 {
 BaseType_t xReturn;
@@ -172,16 +174,91 @@ BaseType_t xReturn;
     }
     #endif /* configSUPPORT_STATIC_ALLOCATION */
 
-    ...
+    #if ( configUSE_TIMERS == 1 )
+    {
+        if( xReturn == pdPASS )
+        {
+            xReturn = xTimerCreateTimerTask();
+        }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
+    }
+    #endif /* configUSE_TIMERS */
+
+    if( xReturn == pdPASS )
+    {
+        /* freertos_tasks_c_additions_init() should only be called if the user
+        definable macro FREERTOS_TASKS_C_ADDITIONS_INIT() is defined, as that is
+        the only macro called by the function. */
+        #ifdef FREERTOS_TASKS_C_ADDITIONS_INIT
+        {
+            freertos_tasks_c_additions_init();
+        }
+        #endif
+
+        /* Interrupts are turned off here, to ensure a tick does not occur
+        before or during the call to xPortStartScheduler().  The stacks of
+        the created tasks contain a status word with interrupts switched on
+        so interrupts will automatically get re-enabled when the first task
+        starts to run. */
+        portDISABLE_INTERRUPTS();
+
+        #if ( configUSE_NEWLIB_REENTRANT == 1 )
+        {
+            /* Switch Newlib's _impure_ptr variable to point to the _reent
+            structure specific to the task that will run first. */
+            _impure_ptr = &( pxCurrentTCB->xNewLib_reent );
+        }
+        #endif /* configUSE_NEWLIB_REENTRANT */
+
+        xNextTaskUnblockTime = portMAX_DELAY;
+        xSchedulerRunning = pdTRUE;
+        xTickCount = ( TickType_t ) configINITIAL_TICK_COUNT;
+
+        /* If configGENERATE_RUN_TIME_STATS is defined then the following
+        macro must be defined to configure the timer/counter used to generate
+        the run time counter time base.   NOTE:  If configGENERATE_RUN_TIME_STATS
+        is set to 0 and the following line fails to build then ensure you do not
+        have portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() defined in your
+        FreeRTOSConfig.h file. */
+        portCONFIGURE_TIMER_FOR_RUN_TIME_STATS();
+
+        traceTASK_SWITCHED_IN();
+
+        /* Setting up the timer tick is hardware specific and thus in the
+        portable interface. */
+        if( xPortStartScheduler() != pdFALSE )
+        {
+            /* Should not reach here as if the scheduler is running the
+            function will not return. */
+        }
+        else
+        {
+            /* Should only reach here if a task calls xTaskEndScheduler(). */
+        }
+    }
+    else
+    {
+        /* This line will only be reached if the kernel could not be started,
+        because there was not enough FreeRTOS heap to create the idle task
+        or the timer task. */
+        configASSERT( xReturn != errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY );
+    }
+
+    /* Prevent compiler warnings if INCLUDE_xTaskGetIdleTaskHandle is set to 0,
+    meaning xIdleTaskHandle is not used anywhere else. */
+    ( void ) xIdleTaskHandle;
 }
-```
+//}
 
-- BaseType_t は，H/Wアーキテクチャで最も効率的に扱えるデータタイプ。ATMega328pでは8bit?
-  - 1.5 Data Types and Coding Style Guide
-- configSUPPORT_STATIC_ALLOCATION = 0 なので `#else` が有効。(以降、特に断りなく#if definedで該当しない行は引用せず省略することがある。)
 
-# tasks.c::BaseType_t xTaskCreate(), 1/2
-  ```c
+ * BaseType_t は，H/Wアーキテクチャで最も効率的に扱えるデータタイプ。ATMega328pでは8bit?
+ ** 1.5 Data Types and Coding Style Guide
+ * configSUPPORT_STATIC_ALLOCATION = 0 なので `#else` が有効。(以降、特に断りなく#if definedで該当しない行は引用せず省略することがある。)
+
+//listnum[xTaskCreate_1][tasks.c::BaseType_t xTaskCreate(), 1/2][c]{
     BaseType_t xTaskCreate( TaskFunction_t pxTaskCode,
                             const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                             const configSTACK_DEPTH_TYPE usStackDepth,
@@ -192,11 +269,14 @@ BaseType_t xReturn;
     TCB_t *pxNewTCB;
     BaseType_t xReturn;
 
-        ... #if defined 非該当行を省略
-
         /* If the stack grows down then allocate the stack then the TCB so the stack
         does not grow into the TCB.  Likewise if the stack grows up then allocate
         the TCB then the stack. */
+        #if( portSTACK_GROWTH > 0 )
+        {
+            ...
+        }
+        #else /* portSTACK_GROWTH */
         {
         StackType_t *pxStack;
 
@@ -205,17 +285,16 @@ BaseType_t xReturn;
 
     ...
 }
+//}
 
-```
-- TCB_t は、Task Control Bufferのための構造体。
-- portSTACK_GROWTH = -1 (@portmacro.h) なので、`#else`が有効。
-- StackType_t は uint8_t である(@portmacro.h)
-- usStackDepth はこの関数の引数で、configMINIMAL_STACK_SIZE が値渡しされている。StackType_t は uint8_t なので 192byte のstack領域を確保する。
-- pvPortMalloc() でメモリ確保している。
+ * TCB_t は、Task Control Bufferのための構造体。
+ * portSTACK_GROWTH = -1 (@portmacro.h) なので、`#else`が有効。
+ * StackType_t は uint8_t である(@portmacro.h)
+ * usStackDepth はこの関数の引数で、configMINIMAL_STACK_SIZE が値渡しされている。StackType_t は uint8_t なので 192byte のstack領域を確保する。
+ * pvPortMalloc() でメモリ確保している。
 
 
-# tasks.c::tskTCB, TCB_t
-```c
+//listnum[tskTCB][tasks.c::tskTCB, TCB_t][c]{
 /*
  * Task control block.  A task control block (TCB) is allocated for each task,
  * and stores task state information, including a pointer to the task's context
@@ -300,10 +379,9 @@ typedef struct TaskControlBlock_t
 /* The old tskTCB name is maintained above then typedefed to the new TCB_t name
 below to enable the use of older kernel aware debuggers. */
 typedef tskTCB TCB_t;
-```
+//}
 
-# heap_3.c::void *pvPortMalloc( size_t xWantedSize )
-```c
+//listnum[pvPortMalloc][heap_3.c::void *pvPortMalloc( size_t xWantedSize )]{
 void *pvPortMalloc( size_t xWantedSize )
 {
 void *pvReturn;
@@ -327,15 +405,15 @@ void *pvReturn;
 
     return pvReturn;
 }
-```
-- malloc() は stdlib.h で定義されている
-  - 中身は要確認 <!-- TODO -->
-- traceMALLOC( pvReturn, xWantedSize ); はどこで定義されている？ <!-- TODO -->
-- メモリ確保する前に vTaskSuspendAll() ですべてのタスクをサスペンドし、メモリ確保後に xTaskResumeAll() ですべてのタスクをレジュームしている。
-- heap_3.c の他に heap_1.c, heap_2.c, heap_4.c がある場合がる。
+//}
 
-# tasks.c::vTaskSuspendAll()
-```c
+ * malloc() は stdlib.h で定義されている
+  * 中身は要確認 <!-- TODO -->
+ * traceMALLOC( pvReturn, xWantedSize ); はどこで定義されている？ <!-- TODO -->
+ * メモリ確保する前に vTaskSuspendAll() ですべてのタスクをサスペンドし、メモリ確保後に xTaskResumeAll() ですべてのタスクをレジュームしている。
+ * heap_3.c の他に heap_1.c, heap_2.c, heap_4.c がある場合がる。
+
+//listnum[vTaskSuspendAll][tasks.c::vTaskSuspendAll()]{
 void vTaskSuspendAll( void )
 {
     /* A critical section is not required as the variable is of type
@@ -344,17 +422,50 @@ void vTaskSuspendAll( void )
     http://goo.gl/wu4acr */
     ++uxSchedulerSuspended;
 }
-```
-- コンテキストスイッチをそのままにしておく。
-- http://goo.gl/wu4acr の要約
-  - キーポイントは、各タスクはそれぞれ自分自身のコンテキストを管理するので、変数(uxSchedulerSuspended)がもしゼロだとしてもコンテキストスイッチは起こらない。従って、レジスタバックからメモリへ書き込むことはatomic(訳注：不可分で2つ以上の命令に分割できない。1つのstore命令である。)であり、問題にならない。
+//}
 
-# tasks.c::vTaskResumeAll()
-```c
-```
+ * コンテキストスイッチをそのままにしておく。
+ * http://goo.gl/wu4acr の要約
+ ** キーポイントは、各タスクはそれぞれ自分自身のコンテキストを管理するので、変数(uxSchedulerSuspended)がもしゼロだとしてもコンテキストスイッチは起こらない。従って、レジスタバックからメモリへ書き込むことはatomic(訳注：不可分で2つ以上の命令に分割できない。1つのstore命令である。)であり、問題にならない。
 
-# tasks.c::BaseType_t xTaskCreate(), 2/2
-```c
+//listnum[vApplicationMallocFailedHook][variantHooks.c::vApplicationMallocFailedHook()]{
+void vApplicationMallocFailedHook( void )
+{
+#if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) // Arduino Mega with 2560
+...
+#elif defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) // assume we're using an Arduino Uno with 328p
+    DDRB  |= _BV(DDB5);
+    PORTB |= _BV(PORTB5);       // Main (red PB5) LED on. Main LED on.
+
+...
+
+#endif
+
+    ...
+
+    for(;;)
+    {
+        _delay_ms(50);
+
+#if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)  // Mega with 2560
+        PINB  |= _BV(PINB7);       // Main (red PB7) LED toggle. Main LED fast blink.
+
+#elif defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) // assume we're using an Arduino Uno with 328p
+        PINB  |= _BV(PINB5);       // Main (red PB5) LED toggle. Main LED fast blink.
+
+...
+
+#endif
+    }
+}
+//}
+
+  * Arduino UNO は ATmega328P。malloc失敗時はLEDを点滅
+
+//listnum[vTaskResumeAll][tasks.c::vTaskResumeAll()]{
+//}
+
+//listnum[xTaskCreate_2][tasks.c::BaseType_t xTaskCreate(), 2/2]{
     BaseType_t xTaskCreate( TaskFunction_t pxTaskCode,
                             const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                             const configSTACK_DEPTH_TYPE usStackDepth,
@@ -389,11 +500,11 @@ void vTaskSuspendAll( void )
 
         ...
     }
-```
-- このタスクのためのTCBのためのメモリ領域を確保し、確保したスタック領域pxStackを割り当てる。TCBを作成できなかった場合は、確保したスタック領域も開放する。
+//}
 
-# tasks.c::void vTaskStartScheduler( void ), 2/6
-```c
+ * このタスクのためのTCB(Task Control Buffer)のためのメモリ領域を確保し、確保したスタック領域pxStackを割り当てる。TCBを作成できなかった場合は、確保したスタック領域も開放する。
+
+//listnum[vTaskStartScheduler_2][tasks.c::void vTaskStartScheduler( void ), 2/6]{
 void vTaskStartScheduler( void )
 {
     ...
@@ -413,12 +524,11 @@ void vTaskStartScheduler( void )
 
     ...
 }
-```
-- タスク作成が成功していたら、タイマータスクを作る。
+//}
 
+* タスク作成が成功していたら、タイマータスクを作る。
 
-# timers.c::BaseType_t xTimerCreateTimerTask( void ), 1/2
-```c
+//listnum[xTimerCreateTimerTask_1][timers.c::BaseType_t xTimerCreateTimerTask( void ), 1/2]{
 BaseType_t xTimerCreateTimerTask( void )
 {
 BaseType_t xReturn = pdFAIL;
@@ -428,25 +538,19 @@ BaseType_t xReturn = pdFAIL;
     timer service task has been created/initialised.  If timers have already
     been created then the initialisation will already have been performed. */
     prvCheckForValidListAndQueue();
+BaseType_t xTimerCreateTimerTask( void )
 
     ...
-}
-```
+//}
 
-# timers.c::prvCheckForValidListAndQueue()
-```c
+//listnum[prvCheckForValidListAndQueue][ timers.c::prvCheckForValidListAndQueue()]{
 static void prvCheckForValidListAndQueue( void )
 {
-PRIVILEGED_DATA static List_t xActiveTimerList1;
-PRIVILEGED_DATA static List_t xActiveTimerList2;
-
     /* Check that the list from which active timers are referenced, and the
     queue used to communicate with the timer service, have been
     initialised. */
     taskENTER_CRITICAL();
     {
-        ... #if defined で該当しない行を省略。
-
         if( xTimerQueue == NULL )
         {
             vListInitialise( &xActiveTimerList1 );
@@ -454,10 +558,33 @@ PRIVILEGED_DATA static List_t xActiveTimerList2;
             pxCurrentTimerList = &xActiveTimerList1;
             pxOverflowTimerList = &xActiveTimerList2;
 
+            #if( configSUPPORT_STATIC_ALLOCATION == 1 )
+            {
+                /* The timer queue is allocated statically in case
+                configSUPPORT_DYNAMIC_ALLOCATION is 0. */
+                static StaticQueue_t xStaticTimerQueue; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
+                static uint8_t ucStaticTimerQueueStorage[ ( size_t ) configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ]; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
+
+                xTimerQueue = xQueueCreateStatic( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, ( UBaseType_t ) sizeof( DaemonTaskMessage_t ), &( ucStaticTimerQueueStorage[ 0 ] ), &xStaticTimerQueue );
+            }
+            #else
             {
                 xTimerQueue = xQueueCreate( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, sizeof( DaemonTaskMessage_t ) );
             }
+            #endif
 
+            #if ( configQUEUE_REGISTRY_SIZE > 0 )
+            {
+                if( xTimerQueue != NULL )
+                {
+                    vQueueAddToRegistry( xTimerQueue, "TmrQ" );
+                }
+                else
+                {
+                    mtCOVERAGE_TEST_MARKER();
+                }
+            }
+            #endif /* configQUEUE_REGISTRY_SIZE */
         }
         else
         {
@@ -466,36 +593,176 @@ PRIVILEGED_DATA static List_t xActiveTimerList2;
     }
     taskEXIT_CRITICAL();
 }
-```
+//}
 
-```c
-/* The list in which active timers are stored.  Timers are referenced in expire
-time order, with the nearest expiry time at the front of the list.  Only the
-timer service task is allowed to access these lists. */
-PRIVILEGED_DATA static List_t *pxCurrentTimerList;
-PRIVILEGED_DATA static List_t *pxOverflowTimerList;
-```
-- コメントによると、アクティブなタイマーがこのリストで管理される。タイマーは時間が切れる順に参照される、最も最初に切れるタイマーがリストの先頭にある
-- pxOverflowTimerListの目的はよくわからない。
 
-```c
+//listnum[prvCheckForValidListAndQueue_2][timer.h::prvCheckForValidListAndQueue, 2/?]{
+static void prvCheckForValidListAndQueue( void )
+{
+    /* Check that the list from which active timers are referenced, and the
+    queue used to communicate with the timer service, have been
+    initialised. */
+    taskENTER_CRITICAL();
+//}
+
+ * コメントによると、アクティブなタイマーがこのリストで管理される。タイマーは時間が切れる順に参照される、最も最初に切れるタイマーがリストの先頭にある
+
+//listnum[taskENTER_CRITICAL][task.h]{
+#define taskENTER_CRITICAL()        portENTER_CRITICAL()
+//}
+
+//listnum[portENTER_CRITICAL][portmacro.h]{
+#define portENTER_CRITICAL()    __asm__ __volatile__ (                              \
+                                        "in __tmp_reg__, __SREG__"        "\n\t"    \
+                                        "cli"                             "\n\t"    \
+                                        "push __tmp_reg__"                "\n\t"    \
+                                        ::: "memory"                                \
+                                        )
+//}
+
+ * ステータスレジスタをSTACKに退避している
+
+ * in : Load an I/O Location to Register
+ ** __tmp_reg__ に __SREG__ をコピーする
+ * cli : 割り込み禁止
+ * __tmp_reg__ の値を STACK に積む(push)
+ * __SREG__	: Status register at address 0x3F
+ * __tmp_reg__	: Register r0, used for temporary storage
+ * clobber "memory"
+ ** コンパイラに対して、アセンブラコードはメモリ配置を修正するかもしれないことを知らせる
+ ** それは、コンパイラにレジスタに保持されている全てのコンテンツを保持(退避)することを、アセンブラコード実行前に、強制する。アセンブラコード実行後に書き戻す。
+ *** http://www.nongnu.org/avr-libc/user-manual/inline_asm.html
+
+//listnum[prvCheckForValidListAndQueue_3][timer.h::prvCheckForValidListAndQueue, 3/?]{
+    taskENTER_CRITICAL();
+    {
+        if( xTimerQueue == NULL )
+        {
             vListInitialise( &xActiveTimerList1 );
             vListInitialise( &xActiveTimerList2 );
             pxCurrentTimerList = &xActiveTimerList1;
             pxOverflowTimerList = &xActiveTimerList2;
-```
-- pxCurrentTimerList, pxOverflowTimerList は tasks.c で定義されている変数
-- 現在のタイマーリストと、オーバーフローしたタイマーリストの２つを作成している。 オーバーフローしたタイマーリストとは？
+//}
+ * vListInitialiseは双方向リストの初期化API
+ * pxCurrentTimerList, pxOverflowTimerList は tasks.c で定義されている変数
+ * 現在のタイマーリストと、オーバーフローしたタイマーリストの２つを作成している。 
+ * @todo : オーバーフローしたタイマーリストとは？
 
 
-```c
+//listnum[prvCheckForValidListAndQueue_4][timer.h::prvCheckForValidListAndQueue, 4/?]{
+            pxOverflowTimerList = &xActiveTimerList2;
+
+            #if( configSUPPORT_STATIC_ALLOCATION == 1 )
+            {
+                ...
+            }
+            #else
+            {
                 xTimerQueue = xQueueCreate( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, sizeof( DaemonTaskMessage_t ) );
-```
-- タイマーのためのキューを作成している。サイズは10。listとの使い分けは？
+            }
+            #endif
+//}
+
+//listnum[xQueueCreate][queue.h]
+#if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
+    #define xQueueCreate( uxQueueLength, uxItemSize ) xQueueGenericCreate( ( uxQueueLength ), ( uxItemSize ), ( queueQUEUE_TYPE_BASE ) )
+#endif
+//}
+
+//listnum[xQueueGenericCreate_define][queue.h]
+#if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
+    #define xQueueCreate( uxQueueLength, uxItemSize ) xQueueGenericCreate( ( uxQueueLength ), ( uxItemSize ), ( queueQUEUE_TYPE_BASE ) )
+#endif
+//}
+
+//listnum[xQueueGenericCreate][queue.c]
+    QueueHandle_t xQueueGenericCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, const uint8_t ucQueueType )
+    {
+    Queue_t *pxNewQueue;
+    size_t xQueueSizeInBytes;
+    uint8_t *pucQueueStorage;
+
+        configASSERT( uxQueueLength > ( UBaseType_t ) 0 );
+
+        if( uxItemSize == ( UBaseType_t ) 0 )
+        {
+            /* There is not going to be a queue storage area. */
+            xQueueSizeInBytes = ( size_t ) 0;
+        }
+        else
+        {
+            /* Allocate enough space to hold the maximum number of items that
+            can be in the queue at any time. */
+            xQueueSizeInBytes = ( size_t ) ( uxQueueLength * uxItemSize ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
+        }
+
+        /* Allocate the queue and storage area.  Justification for MISRA
+        deviation as follows:  pvPortMalloc() always ensures returned memory
+        blocks are aligned per the requirements of the MCU stack.  In this case
+        pvPortMalloc() must return a pointer that is guaranteed to meet the
+        alignment requirements of the Queue_t structure - which in this case
+        is an int8_t *.  Therefore, whenever the stack alignment requirements
+        are greater than or equal to the pointer to char requirements the cast
+        is safe.  In other cases alignment requirements are not strict (one or
+        two bytes). */
+        pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); /*lint !e9087 !e9079 see comment above. */
+
+        if( pxNewQueue != NULL )
+        {
+            /* Jump past the queue structure to find the location of the queue
+            storage area. */
+            pucQueueStorage = ( uint8_t * ) pxNewQueue;
+            pucQueueStorage += sizeof( Queue_t ); /*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists conveying intent. */
+
+            #if( configSUPPORT_STATIC_ALLOCATION == 1 )
+            {
+                /* Queues can be created either statically or dynamically, so
+                note this task was created dynamically in case it is later
+                deleted. */
+                pxNewQueue->ucStaticallyAllocated = pdFALSE;
+            }
+            #endif /* configSUPPORT_STATIC_ALLOCATION */
+
+            prvInitialiseNewQueue( uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
+        }
+        else
+        {
+            traceQUEUE_CREATE_FAILED( ucQueueType );
+            mtCOVERAGE_TEST_MARKER();
+        }
+
+        return pxNewQueue;
+    }
+//}
+
+ * タイマーのためのキューを作成している。サイズは10。listとの使い分けは？
 
 
-# timers.c:: BaseType_t xTimerCreateTimerTask( void ), 2/2
-```c
+//listnum[prvCheckForValidListAndQueue_5][timer.h::prvCheckForValidListAndQueue, 5/?]{
+    taskEXIT_CRITICAL();
+//}
+
+//listnum[taskEXIT_CRITICAL][task.h.]
+#define taskEXIT_CRITICAL()         portEXIT_CRITICAL()
+//}
+
+//listnum[portEXIT_CRITICAL_define][task.h.]
+#define taskEXIT_CRITICAL()         portEXIT_CRITICAL()
+//}
+
+//listnum[portEXIT_CRITICAL][portmacro.h]
+#define portEXIT_CRITICAL()     __asm__ __volatile__ (                              \
+                                        "pop __tmp_reg__"                 "\n\t"    \
+                                        "out __SREG__, __tmp_reg__"       "\n\t"    \
+                                        ::: "memory"                                \
+                                        )
+//}
+ * __tmp_reg__ の値を STACK から取り出す(pop)
+ * out : Store an I/O Location to Register
+ * ステータスレジスタ(__SREG__)に退避した値を書き戻す
+
+
+//listnum[xTimerCreateTimerTask_2][timers.c:: BaseType_t xTimerCreateTimerTask( void ), 2/2]{
 BaseType_t xTimerCreateTimerTask( void )
 {
     ...
@@ -519,12 +786,13 @@ BaseType_t xTimerCreateTimerTask( void )
     configASSERT( xReturn );
     return xReturn;
 }
-```
-- タイマーのタスクを作る
+//}
+
+ * タイマーのタスクを作る
+ ** スケジューラタスクのタイマーのタスクを作る
 
 
-# tasks.c::vTaskStartScheduler(), 3/6
-```c
+//listnum[vTaskStartScheduler_3][tasks.c::vTaskStartScheduler(), 3/6]{
 void vTaskStartScheduler( void )
 {
     ...
@@ -536,7 +804,7 @@ void vTaskStartScheduler( void )
         the only macro called by the function. */
         #ifdef FREERTOS_TASKS_C_ADDITIONS_INIT
         {
-            freertos_tasks_c_additions_init();
+            ...
         }
         #endif
 
@@ -549,9 +817,7 @@ void vTaskStartScheduler( void )
 
         #if ( configUSE_NEWLIB_REENTRANT == 1 )
         {
-            /* Switch Newlib's _impure_ptr variable to point to the _reent
-            structure specific to the task that will run first. */
-            _impure_ptr = &( pxCurrentTCB->xNewLib_reent );
+            ...
         }
         #endif /* configUSE_NEWLIB_REENTRANT */
 
@@ -591,33 +857,45 @@ void vTaskStartScheduler( void )
 
     ...
 }
-```
-- portDISABLE_INTERRUPTS() は portmacro.h で定義されている。avrのasmなのであとで確認する。
-  - #define portDISABLE_INTERRUPTS()        __asm__ __volatile__ ( "cli" ::: "memory")
+//}
 
-```c
+ * portDISABLE_INTERRUPTS() は portmacro.h で定義されている。avrのasmなのであとで確認する。
+
+//listnum[portDISABLE_INTERRUPT][portmacro.h]{
+#define portDISABLE_INTERRUPTS()        __asm__ __volatile__ ( "cli" ::: "memory")
+//}
+ * cli: 割り込み禁止
+ * xPortStartScheduler()を呼ぶ前、あるいは呼んでいる途中でCPUクロックが進まないように？割り込みが起きないように?
+ * 最初のタスクが実行されると自動的に割り込みは有効になる。
+
+//listnum[vTaskStartScheduler_4][taskc.c::void vTaskStartScheduler( void ), 4/6]{
         xNextTaskUnblockTime = portMAX_DELAY;
         xSchedulerRunning = pdTRUE;
         xTickCount = ( TickType_t ) configINITIAL_TICK_COUNT;
-```
-- 右辺の値はそれぞれportmacro.h, projdefs.h, Arduino_FreeRTOS.h に記述されている。
+//}
 
-# taskc.c::void vTaskStartScheduler( void ), 4/6
-```c
+ * 右辺の値はそれぞれportmacro.h, projdefs.h, Arduino_FreeRTOS.h に記述されている。
+
+//listnum[vTaskStartScheduler_5][taskc.c::void vTaskStartScheduler( void ), 5/6]{
 void vTaskStartScheduler( void )
 {
     ...
 
+        /* If configGENERATE_RUN_TIME_STATS is defined then the following
+        macro must be defined to configure the timer/counter used to generate
+        the run time counter time base.   NOTE:  If configGENERATE_RUN_TIME_STATS
+        is set to 0 and the following line fails to build then ensure you do not
+        have portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() defined in your
+        FreeRTOSConfig.h file. */
         portCONFIGURE_TIMER_FOR_RUN_TIME_STATS();
 
         traceTASK_SWITCHED_IN();
 
     ...
 }
-```
+//}
 
-# Arduino_FreeRTOS.h
-```c
+//listnum[Arduino_FreeRTOS_h][Arduino_FreeRTOS.h]{
 ...
 
 #ifndef portCONFIGURE_TIMER_FOR_RUN_TIME_STATS
@@ -633,11 +911,10 @@ void vTaskStartScheduler( void )
 #endif
 
 ...
-```
-- どちらも中身はない。
+//}
+ * どちらも中身はない。
 
-#tasks.c::void vTaskStartScheduler( void ), 5/6
-```c
+//listnum[vTaskStartScheduler_6][tasks.c::void vTaskStartScheduler( void ), 6/6]{
 void vTaskStartScheduler( void )
 {
     ...
@@ -655,29 +932,99 @@ void vTaskStartScheduler( void )
 
     ...
 }
-```
+//}
 
-# port.c::xPortStartScheduler(void)
-```c
+//listnum[xPortStartScheduler][port.c::xPortStartScheduler(void)]{
 BaseType_t xPortStartScheduler( void )
 {
-	/* Setup the relevant timer hardware to generate the tick. */
-	prvSetupTimerInterrupt();
+    /* Setup the relevant timer hardware to generate the tick. */
+    prvSetupTimerInterrupt();
 
-	/* Restore the context of the first task that is going to run. */
-	portRESTORE_CONTEXT();
+    /* Restore the context of the first task that is going to run. */
+    portRESTORE_CONTEXT();
 
-	/* Simulate a function call end as generated by the compiler.  We will now
-	jump to the start of the task the context of which we have just restored. */
-	__asm__ __volatile__ ( "ret" );
+    /* Simulate a function call end as generated by the compiler.  We will now
+    jump to the start of the task the context of which we have just restored. */
+    __asm__ __volatile__ ( "ret" );
 
-	/* Should not get here. */
-	return pdTRUE;
+    /* Should not get here. */
+    return pdTRUE;
 }
-```
+//}
 
-# tasks.c::void vTaskStartScheduler( void ), 6/6
-```c
+ * prvSetupTimerInterrupt() で割り込み禁止
+ * 
+
+//listnum[portRESTORE_CONTEXT][port.c]
+#define portRESTORE_CONTEXT()                                                           \
+        __asm__ __volatile__ (  "lds    r26, pxCurrentTCB                       \n\t"   \
+                                "lds    r27, pxCurrentTCB + 1                   \n\t"   \
+                                "ld     r28, x+                                 \n\t"   \
+                                "out    __SP_L__, r28                           \n\t"   \
+                                "ld     r29, x+                                 \n\t"   \
+                                "out    __SP_H__, r29                           \n\t"   \
+                                "pop    r31                                     \n\t"   \
+                                "pop    r30                                     \n\t"   \
+                                ...
+                                "pop    r3                                      \n\t"   \
+                                "pop    r2                                      \n\t"   \
+                                "pop    __zero_reg__                            \n\t"   \
+                                "pop    __tmp_reg__                             \n\t"   \
+                                "out    __SREG__, __tmp_reg__                   \n\t"   \
+                                "pop    __tmp_reg__                             \n\t"   \
+                             );
+#endif
+//}
+ * lds: LDS – Load Direct from Data Space
+ * pxCurrentTCBのアドレスをコピー
+ * __SP_H__	Stack pointer high byte at address 0x3E
+ * __SP_L__	Stack pointer low byte at address 0x3D
+ * stackポインタが16bitある？のでHigh,Lowに分けて書き戻す
+ * r2～r31の汎用レジスタを書き戻す(pop)
+ * __tmp_reg__(r0)(実際はステータスレジスタの値), __zero_reg__(r1)を書き戻す
+ * __tmp_reg__に保持していたステータスレジスタの値をステータスレジスタに書き戻す
+ * __tmp_reg__(r0)を書き戻す
+
+ * __asm__ __volatile__ ( "ret" );
+ ** returnじゃダメなのはなんで??? __asm__ __volatile__ ( "ret" );
+
+//listnum[portSAVE_CONTEXT][port.c]
+#define portSAVE_CONTEXT()                                                              \
+        __asm__ __volatile__ (  "push   __tmp_reg__                             \n\t"   \
+                                "in     __tmp_reg__, __SREG__                   \n\t"   \
+                                "cli                                            \n\t"   \
+                                "push   __tmp_reg__                             \n\t"   \
+                                "push   __zero_reg__                            \n\t"   \
+                                "clr    __zero_reg__                            \n\t"   \
+                                "push   r2                                      \n\t"   \
+                                "push   r3                                      \n\t"   \
+
+                                ...
+
+                                "push   r30                                     \n\t"   \
+                                "push   r31                                     \n\t"   \
+                                "lds    r26, pxCurrentTCB                       \n\t"   \
+                                "lds    r27, pxCurrentTCB + 1                   \n\t"   \
+                                "in     __tmp_reg__, __SP_L__                   \n\t"   \
+                                "st     x+, __tmp_reg__                         \n\t"   \
+                                "in     __tmp_reg__, __SP_H__                   \n\t"   \
+                                "st     x+, __tmp_reg__                         \n\t"   \
+                             );
+#endif
+//}
+
+ * __tmp_reg__(r0) を退避
+ * 割り込み禁止
+ * __tmp_reg__にコピーしたステータスレジスタ, __zero_reg__を退避
+ * __zero_reg__をゼロクリア
+ * r2～r31の汎用レジスタを退避
+ * lds: LDS – Load Direct from Data Space
+ * pxCurrentTCBのアドレスをコピー
+ * __SP_H__	Stack pointer high byte at address 0x3E
+ * __SP_L__	Stack pointer low byte at address 0x3D
+ * stackポインタが16bitある？のでHigh,Lowに分けて退避
+
+//listnum[vTaskStartScheduler_7][tasks.c::void vTaskStartScheduler( void ), 7/6]{
 void vTaskStartScheduler( void )
 {
     ...
@@ -686,18 +1033,14 @@ void vTaskStartScheduler( void )
     meaning xIdleTaskHandle is not used anywhere else. */
     ( void ) xIdleTaskHandle;
 }
-```
-- `INCLUDE_xTaskGetIdleTaskHandle` が`0`に設定されている時でも、コンパイラがワーニング(宣言されたが一度も使用されていない)を出さないように記載されている。
-  - FreeRTOSの思想として、いろんなCPUに移植できるようにしているが、ノーエラー、ノーワーニングで提供する（要確認）
+//}
+* `INCLUDE_xTaskGetIdleTaskHandle` が`0`に設定されている時でも、コンパイラがワーニング(宣言されたが一度も使用されていない)を出さないように記載されている。
+  * FreeRTOSの思想として、いろんなCPUに移植できるようにしているが、ノーエラー、ノーワーニングで提供する（要確認）
 
 
 ここまでで初期化完了
 
----
-
-
-# example/Blink_AnalogRead.ino
-```c
+//listnum[Blink_AnalogRead][example/Blink_AnalogRead.ino]{
 #include <Arduino_FreeRTOS.h>
 
 // define two tasks for Blink & AnalogRead
@@ -805,7 +1148,7 @@ void TaskAnalogRead(void *pvParameters)  // This is a task.
     vTaskDelay(1);  // one tick delay (15ms) in between reads for stability
   }
 }
-```
+//}
 
 ---
 ここまでに登場していない関数の説明
