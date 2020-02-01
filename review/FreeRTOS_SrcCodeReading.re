@@ -8,12 +8,13 @@
 == 対象バージョン
  * Arduino_FreeRTOS_Library
  ** https://github.com/feilipu/Arduino_FreeRTOS_Library.git
- *** 10.1.1-1
+ *** 10.2.0-3
  * FreeRTOS
  ** 161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf
  ** FreeRTOS_Reference_Manual_V10.0.0.pdf
  * H/W
  ** Arduino UNO(ATMega328p)
+ * Arduino IDE 1.8.10
 
 == 方針
  * 最初にコードを引用し、そのあと解説を加える
@@ -54,15 +55,19 @@ variantHooks.cpp||
 //}
 
 == 変数命名規則
- * p
- * r
- * v
+ * 'c' : char
+ * 's' : int16_t
+ * 'x' : BaseType_t
+ * 'p' : ポインタ
+ * 'u' : unsigned
 
 == 関数命名規則
  * 'v' で始まる関数の戻り値は void
  * 'p' で始まる関数の戻り値は pointer
  * 'x' で始まる関数の戻り値は BaseType_t
  * Task で始まる関数の実体は、tasks.c に記述されている
+ ** pvTimerGetTimerID() は void pointerを返す関数でtimers.cで定義されている
+ * 'prv' で始まる関数は private 関数
 
 == ソースコードの引用方法
  * 下記のような関数があるとき、すべてを一度に引用すると見にくいので、部分的に引用して説明する。
@@ -663,19 +668,19 @@ static void prvCheckForValidListAndQueue( void )
             #endif
 //}
 
-//listnum[xQueueCreate][queue.h]
+//listnum[xQueueCreate][queue.h]{
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
     #define xQueueCreate( uxQueueLength, uxItemSize ) xQueueGenericCreate( ( uxQueueLength ), ( uxItemSize ), ( queueQUEUE_TYPE_BASE ) )
 #endif
 //}
 
-//listnum[xQueueGenericCreate_define][queue.h]
+//listnum[xQueueGenericCreate_define][queue.h]{
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
     #define xQueueCreate( uxQueueLength, uxItemSize ) xQueueGenericCreate( ( uxQueueLength ), ( uxItemSize ), ( queueQUEUE_TYPE_BASE ) )
 #endif
 //}
 
-//listnum[xQueueGenericCreate][queue.c]
+//listnum[xQueueGenericCreate][queue.c]{
     QueueHandle_t xQueueGenericCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, const uint8_t ucQueueType )
     {
     Queue_t *pxNewQueue;
@@ -742,15 +747,15 @@ static void prvCheckForValidListAndQueue( void )
     taskEXIT_CRITICAL();
 //}
 
-//listnum[taskEXIT_CRITICAL][task.h.]
+//listnum[taskEXIT_CRITICAL][task.h.]{
 #define taskEXIT_CRITICAL()         portEXIT_CRITICAL()
 //}
 
-//listnum[portEXIT_CRITICAL_define][task.h.]
+//listnum[portEXIT_CRITICAL_define][task.h.]{
 #define taskEXIT_CRITICAL()         portEXIT_CRITICAL()
 //}
 
-//listnum[portEXIT_CRITICAL][portmacro.h]
+//listnum[portEXIT_CRITICAL][portmacro.h]{
 #define portEXIT_CRITICAL()     __asm__ __volatile__ (                              \
                                         "pop __tmp_reg__"                 "\n\t"    \
                                         "out __SREG__, __tmp_reg__"       "\n\t"    \
@@ -955,7 +960,7 @@ BaseType_t xPortStartScheduler( void )
  * prvSetupTimerInterrupt() で割り込み禁止
  * 
 
-//listnum[portRESTORE_CONTEXT][port.c]
+//listnum[portRESTORE_CONTEXT][port.c]{
 #define portRESTORE_CONTEXT()                                                           \
         __asm__ __volatile__ (  "lds    r26, pxCurrentTCB                       \n\t"   \
                                 "lds    r27, pxCurrentTCB + 1                   \n\t"   \
@@ -988,7 +993,7 @@ BaseType_t xPortStartScheduler( void )
  * __asm__ __volatile__ ( "ret" );
  ** returnじゃダメなのはなんで??? __asm__ __volatile__ ( "ret" );
 
-//listnum[portSAVE_CONTEXT][port.c]
+//listnum[portSAVE_CONTEXT][port.c]{
 #define portSAVE_CONTEXT()                                                              \
         __asm__ __volatile__ (  "push   __tmp_reg__                             \n\t"   \
                                 "in     __tmp_reg__, __SREG__                   \n\t"   \
@@ -1150,5 +1155,63 @@ void TaskAnalogRead(void *pvParameters)  // This is a task.
 }
 //}
 
----
+//listnum[vTaskDelay][tasks.c::vTaskDelay()]{
+#if ( INCLUDE_vTaskDelay == 1 )
+
+    void vTaskDelay( const TickType_t xTicksToDelay )
+    {
+    BaseType_t xAlreadyYielded = pdFALSE;
+
+        /* A delay time of zero just forces a reschedule. */
+        if( xTicksToDelay > ( TickType_t ) 0U )
+        {
+            configASSERT( uxSchedulerSuspended == 0 );
+            vTaskSuspendAll();
+            {
+                traceTASK_DELAY();
+
+                /* A task that is removed from the event list while the
+                scheduler is suspended will not get placed in the ready
+                list or removed from the blocked list until the scheduler
+                is resumed.
+
+                This task cannot be in an event list as it is the currently
+                executing task. */
+                prvAddCurrentTaskToDelayedList( xTicksToDelay, pdFALSE );
+            }
+            xAlreadyYielded = xTaskResumeAll();
+        }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
+
+        /* Force a reschedule if xTaskResumeAll has not already done so, we may
+        have put ourselves to sleep. */
+        if( xAlreadyYielded == pdFALSE )
+        {
+            portYIELD_WITHIN_API();
+        }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
+    }
+
+#endif /* INCLUDE_vTaskDelay */
+//}
+
+
 ここまでに登場していない関数の説明
+
+
+== croutine.c
+== event_groups.c
+== heap_3.c
+== list.c
+== port.c
+== queue.c
+== stream_buffer.c
+== tasks.c
+== timers.c
+== variantHooks.cpp
