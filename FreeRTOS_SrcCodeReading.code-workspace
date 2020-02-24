@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "C:\\Users\\shin\\Documents\\Github\\Arduino_FreeRTOS_Library"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"arduino_freertos.h": "c",
+			"stddef.h": "c"
+		}
+	}
+}

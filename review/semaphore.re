@@ -1,7 +1,7 @@
 = semaphore
 == Interrupts.ino
 
-次に example/Interrupts.ino で使用されているFree RTOS API のソースコードを読み解いていく。
+次に example/Interrupts.ino で使用されているFreeRTOS API のソースコードを読み解いていく。
 
 //listnum[Interrupts][example/Interrupts.ino]{
 /*
@@ -102,14 +102,15 @@ xSemaphoreCreateBinary()
 
 //listnum[xSemaphoreCreateBinary][semphr.h]{
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
-    #define xSemaphoreCreateBinary() xQueueGenericCreate( ( UBaseType_t ) 1, semSEMAPHORE_QUEUE_ITEM_LENGTH, queueQUEUE_TYPE_BINARY_SEMAPHORE )
+    #define xSemaphoreCreateBinary() xQueueGenericCreate( ( UBaseType_t ) 1, @<embed>$|latex|\linebreak\hspace*{5ex}$semSEMAPHORE_QUEUE_ITEM_LENGTH, queueQUEUE_TYPE_BINARY_SEMAPHORE )
 #endif
 //}
 
-* configSUPPORT_DYNAMIC_ALLOCATION は 1 である
+configSUPPORT_DYNAMIC_ALLOCATION は 1 なので、xQueueGenericCreate() を読んでいきます。
+xQueueGenericCreate() はコードを既に読んでいるので、セマフォに関係のある所をおさらいしてみます。
 
-//listnum[xQueueGenericCreate_1][queue.c]{
-    QueueHandle_t xQueueGenericCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, const uint8_t ucQueueType )
+//listnum[xQueueGenericCreate_1][queue.c, 1/2]{
+    QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
     {
     Queue_t *pxNewQueue;
     size_t xQueueSizeInBytes;
@@ -124,8 +125,8 @@ xSemaphoreCreateBinary()
  * uxQueueLength = 1, uxItemSize = 0, ucQueueType = queueQUEUE_TYPE_BINARY_SEMAPHORE
  * xQueueSizeInBytes = 1
 
-//listnum[xQueueGenericCreate_2][queue.c]{
-    QueueHandle_t xQueueGenericCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, const uint8_t ucQueueType )
+//listnum[xQueueGenericCreate_2][queue.c, 2/2]{
+    QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
     {
         ...
 
@@ -138,7 +139,7 @@ xSemaphoreCreateBinary()
         {
             /* Allocate enough space to hold the maximum number of items that
             can be in the queue at any time. */
-            xQueueSizeInBytes = ( size_t ) ( uxQueueLength * uxItemSize ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
+            xQueueSizeInBytes = @<embed>$|latex|\linebreak\hspace*{5ex}$( size_t ) ( uxQueueLength * uxItemSize ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e961 MISRA exception as the casts are only redundant for some ports. */
         }
 
         /* Allocate the queue and storage area.  Justification for MISRA
@@ -150,14 +151,14 @@ xSemaphoreCreateBinary()
         are greater than or equal to the pointer to char requirements the cast
         is safe.  In other cases alignment requirements are not strict (one or
         two bytes). */
-        pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); /*lint !e9087 !e9079 see comment above. */
+        pxNewQueue = @<embed>$|latex|\linebreak\hspace*{5ex}$( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
 
         if( pxNewQueue != NULL )
         {
             /* Jump past the queue structure to find the location of the queue
             storage area. */
             pucQueueStorage = ( uint8_t * ) pxNewQueue;
-            pucQueueStorage += sizeof( Queue_t ); /*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists conveying intent. */
+            pucQueueStorage += sizeof( Queue_t ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists @<embed>$|latex|\linebreak\hspace*{5ex}$conveying intent. */
 
             #if( configSUPPORT_STATIC_ALLOCATION == 1 )
             {
@@ -168,7 +169,7 @@ xSemaphoreCreateBinary()
             }
             #endif /* configSUPPORT_STATIC_ALLOCATION */
 
-            prvInitialiseNewQueue( uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
+            prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
         }
         else
         {
@@ -182,40 +183,16 @@ xSemaphoreCreateBinary()
 
  * Queueのメモリ確保
  ** xQueueSizeInBytesはQueueのデータを保持する部分のメモリサイズ(バイト)。
- ** pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); /*lint !e9087 !e9079 see comment above. */
+ ** pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
  ** Queue_t構造体のアライメントを満たすことを保証する必要がある(int8_t*)
  ** サイズが同じか大きければ型キャストは安全、 
  ** Queue_t構造体のサイズ + xQueueSizeInBytes のサイズだけmallocして、Queue_t構造体のポインタを取得
  ** mallocに成功していれば、pucQueueStorageに今取得したQueue_tを設定してポインタを進める
 
  * Queueの初期化
-//listnum[prvInitialiseNewQueue_1][queue.c]{
-static void prvInitialiseNewQueue( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, uint8_t *pucQueueStorage, const uint8_t ucQueueType, Queue_t *pxNewQueue )
+//listnum[prvInitialiseNewQueue_1][queue.c, 1/2]{
+static void prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$uint8_t *pucQueueStorage, const uint8_t ucQueueType, Queue_t *pxNewQueue )
 {
-    /* Remove compiler warnings about unused parameters should
-    configUSE_TRACE_FACILITY not be set to 1. */
-    ( void ) ucQueueType;
-
-    if( uxItemSize == ( UBaseType_t ) 0 )
-    {
-        /* No RAM was allocated for the queue storage area, but PC head cannot
-        be set to NULL because NULL is used as a key to say the queue is used as
-        a mutex.  Therefore just set pcHead to point to the queue as a benign
-        value that is known to be within the memory map. */
-        pxNewQueue->pcHead = ( int8_t * ) pxNewQueue;
-    }
-    else
-    {
-        /* Set the head to the start of the queue storage area. */
-        pxNewQueue->pcHead = ( int8_t * ) pucQueueStorage;
-    }
-
-    /* Initialise the queue members as described where the queue type is
-    defined. */
-    pxNewQueue->uxLength = uxQueueLength;
-    pxNewQueue->uxItemSize = uxItemSize;
-    ( void ) xQueueGenericReset( pxNewQueue, pdTRUE );
-
     ...
 //}
 
@@ -226,112 +203,6 @@ static void prvInitialiseNewQueue( const UBaseType_t uxQueueLength, const UBaseT
  * セマフォはQueueのサイズ(uxItemSize) はゼロ。
  * pcHeadは新規キューのストレージ領域の先頭のポインタ。サイズがゼロなのでNULLでもよさそうだが、NULLはmutexとして使うことを意味するのでそう設定しない。
  * Queueの長さはセマフォなので1。
-
- * xQueueGenericReset()。Queue のリセット
-
-//listnum[xQueueGenericReset][queue.c]{
-BaseType_t xQueueGenericReset( QueueHandle_t xQueue, BaseType_t xNewQueue )
-{
-Queue_t * const pxQueue = xQueue;
-
-    configASSERT( pxQueue );
-
-    taskENTER_CRITICAL();
-    {
-        pxQueue->u.xQueue.pcTail = pxQueue->pcHead + ( pxQueue->uxLength * pxQueue->uxItemSize ); /*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists conveying intent. */
-        pxQueue->uxMessagesWaiting = ( UBaseType_t ) 0U;
-        pxQueue->pcWriteTo = pxQueue->pcHead;
-        pxQueue->u.xQueue.pcReadFrom = pxQueue->pcHead + ( ( pxQueue->uxLength - 1U ) * pxQueue->uxItemSize ); /*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists conveying intent. */
-        pxQueue->cRxLock = queueUNLOCKED;
-        pxQueue->cTxLock = queueUNLOCKED;
-
-        if( xNewQueue == pdFALSE )
-        {
-            ...
-        }
-        else
-        {
-            /* Ensure the event queues start in the correct state. */
-            vListInitialise( &( pxQueue->xTasksWaitingToSend ) );
-            vListInitialise( &( pxQueue->xTasksWaitingToReceive ) );
-        }
-    }
-    taskEXIT_CRITICAL();
-
-    /* A value is returned for calling semantic consistency with previous
-    versions. */
-    return pdPASS;
-}
-//}
-
- * taskENTER_CRITICAL() で割り込み禁止にして、Queue_t構造体のメンバ変数を初期化
- * taskEXIT_CRITICAL() で割り込み解除
-
- * listの初期化
-
-//listnum[vListInitialise][list.c]{
-void vListInitialise( List_t * const pxList )
-{
-    /* The list structure contains a list item which is used to mark the
-    end of the list.  To initialise the list the list end is inserted
-    as the only list entry. */
-    pxList->pxIndex = ( ListItem_t * ) &( pxList->xListEnd );            /*lint !e826 !e740 !e9087 The mini list structure is used as the list end to save RAM.  This is checked and valid. */
-
-    /* The list end value is the highest possible value in the list to
-    ensure it remains at the end of the list. */
-    pxList->xListEnd.xItemValue = portMAX_DELAY;
-
-    /* The list end next and previous pointers point to itself so we know
-    when the list is empty. */
-    pxList->xListEnd.pxNext = ( ListItem_t * ) &( pxList->xListEnd );    /*lint !e826 !e740 !e9087 The mini list structure is used as the list end to save RAM.  This is checked and valid. */
-    pxList->xListEnd.pxPrevious = ( ListItem_t * ) &( pxList->xListEnd );/*lint !e826 !e740 !e9087 The mini list structure is used as the list end to save RAM.  This is checked and valid. */
-
-    pxList->uxNumberOfItems = ( UBaseType_t ) 0U;
-
-    /* Write known values into the list if
-    configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES is set to 1. */
-    listSET_LIST_INTEGRITY_CHECK_1_VALUE( pxList );
-    listSET_LIST_INTEGRITY_CHECK_2_VALUE( pxList );
-}
-//}
-
- * pxList->pxIndex = ( ListItem_t * ) &( pxList->xListEnd );            /*lint !e826 !e740 !e9087 The mini list structure is used as the list end to save RAM.  This is checked and valid. */
- * listの最後pxIndexはそのリストの最後xListEndを割り当てる
- * 割り当て可能な最大値0xffffを設定。なんで？
- ** pxList->xListEnd.xItemValue = portMAX_DELAY;
- * listがカラである
- * 要素数がゼロである
- * listSET_LIST_INTEGRITY_CHECK_1_VALUE(), listSET_LIST_INTEGRITY_CHECK_2_VALUE() マクロは何もしない
-
-
-//listnum[prvInitialiseNewQueue_2][queue.c]{
-static void prvInitialiseNewQueue( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, uint8_t *pucQueueStorage, const uint8_t ucQueueType, Queue_t *pxNewQueue )
-{
-    ...
-
-    /* Initialise the queue members as described where the queue type is
-    defined. */
-    pxNewQueue->uxLength = uxQueueLength;
-    pxNewQueue->uxItemSize = uxItemSize;
-    ( void ) xQueueGenericReset( pxNewQueue, pdTRUE );
-
-    #if ( configUSE_TRACE_FACILITY == 1 )
-    {
-        pxNewQueue->ucQueueType = ucQueueType;
-    }
-    #endif /* configUSE_TRACE_FACILITY */
-
-    #if( configUSE_QUEUE_SETS == 1 )
-    {
-        pxNewQueue->pxQueueSetContainer = NULL;
-    }
-    #endif /* configUSE_QUEUE_SETS */
-
-    traceQUEUE_CREATE( pxNewQueue );
-}
-//}
-
- * マクロはすべて何もしない
 
 //listnum[Interrupts_2][example/Interrupts.ino]{
 void interruptHandler() {
@@ -356,13 +227,13 @@ xSemaphoreGive() とは違い、xSemaphoreGiveFromISR() は特定されたブロ
  * セマフォのリリース（割り込み処理からセマフォを与える）
 
 //listnum[xSemaphoreGiveFromISR][semphr.h]{
-#define xSemaphoreGiveFromISR( xSemaphore, pxHigherPriorityTaskWoken )    xQueueGiveFromISR( ( QueueHandle_t ) ( xSemaphore ), ( pxHigherPriorityTaskWoken ) )
+#define xSemaphoreGiveFromISR( xSemaphore, pxHigherPriorityTaskWoken )    @<embed>$|latex|\linebreak\hspace*{5ex}$xQueueGiveFromISR( ( QueueHandle_t ) ( xSemaphore ), ( pxHigherPriorityTaskWoken ) )
 //}
 
  * キューで実装されている
 
-//listnum[xQueueGiveFromISR][queue.c]{
-BaseType_t xQueueGiveFromISR( QueueHandle_t xQueue, BaseType_t * const pxHigherPriorityTaskWoken )
+//listnum[xQueueGiveFromISR_1][queue.c, 1/2]{
+BaseType_t xQueueGiveFromISR( @<embed>$|latex|\linebreak\hspace*{5ex}$QueueHandle_t xQueue, BaseType_t * const pxHigherPriorityTaskWoken )
 {
 BaseType_t xReturn;
 UBaseType_t uxSavedInterruptStatus;
@@ -391,6 +262,14 @@ Queue_t * const pxQueue = xQueue;
             messages (semaphores) available. */
             pxQueue->uxMessagesWaiting = uxMessagesWaiting + ( UBaseType_t ) 1;
 
+            ...
+//}
+
+//listnum[xQueueGiveFromISR_2][queue.c::xQueueGiveFromISR(), 2/2]{
+BaseType_t xQueueGiveFromISR( @<embed>$|latex|\linebreak\hspace*{5ex}$QueueHandle_t xQueue, BaseType_t * const pxHigherPriorityTaskWoken )
+{
+    ...
+
             /* The event list is not altered if the queue is locked.  This will
             be done when the queue is unlocked later. */
             if( cTxLock == queueUNLOCKED )
@@ -401,11 +280,11 @@ Queue_t * const pxQueue = xQueue;
                 }
                 #else /* configUSE_QUEUE_SETS */
                 {
-                    if( listLIST_IS_EMPTY( &( pxQueue->xTasksWaitingToReceive ) ) == pdFALSE )
+                    if( listLIST_IS_EMPTY( @<embed>$|latex|\linebreak\hspace*{5ex}$&( pxQueue->xTasksWaitingToReceive ) ) == pdFALSE )
                     {
-                        if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToReceive ) ) != pdFALSE )
+                        if( xTaskRemoveFromEventList( @<embed>$|latex|\linebreak\hspace*{5ex}$&( pxQueue->xTasksWaitingToReceive ) ) != pdFALSE )
                         {
-                            /* The task waiting has a higher priority so record that a
+                            /* The task waiting has a higher priority so record that @<embed>$|latex|\linebreak\hspace*{5ex}$a
                             context    switch is required. */
                             if( pxHigherPriorityTaskWoken != NULL )
                             {
@@ -451,11 +330,6 @@ void TaskLed(void *pvParameters)
   pinMode(LED_BUILTIN, OUTPUT);
 
   for (;;) {
-    
-    /**
-     * Take the semaphore.
-     * https://www.freertos.org/a00122.html
-     */
     if (xSemaphoreTake(interruptSemaphore, portMAX_DELAY) == pdPASS) {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
@@ -464,14 +338,13 @@ void TaskLed(void *pvParameters)
  * セマフォを取得出来たらdigitalWrite()して、LED表示をトグルさせる。
 
 
-//listnum[xSemaphoreTake][semphr.c]{
-#define xSemaphoreTake( xSemaphore, xBlockTime )        xQueueSemaphoreTake( ( xSemaphore ), ( xBlockTime ) )
+//listnum[xSemaphoreTake][semphr.c::xSemaphoreTake()]{
+#define xSemaphoreTake( xSemaphore, xBlockTime )        @<embed>$|latex|\linebreak\hspace*{5ex}$xQueueSemaphoreTake( ( xSemaphore ), ( xBlockTime ) )
 //}
 
- * キューで実装
+セマフォ取得APIもキューで実装されている。
 
-
-//listnum[xQueueSemaphoreTake][queue.c]{
+//listnum[xQueueSemaphoreTake_1][queue.c::xQueueSemaphoreTake(), 1/2]{
 BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 {
 BaseType_t xEntryTimeSet = pdFALSE;
@@ -492,7 +365,7 @@ Queue_t * const pxQueue = xQueue;
     /* Cannot block if the scheduler is suspended. */
     #if ( ( INCLUDE_xTaskGetSchedulerState == 1 ) || ( configUSE_TIMERS == 1 ) )
     {
-        configASSERT( !( ( xTaskGetSchedulerState() == taskSCHEDULER_SUSPENDED ) && ( xTicksToWait != 0 ) ) );
+        configASSERT( !( ( xTaskGetSchedulerState() == taskSCHEDULER_SUSPENDED ) @<embed>$|latex|\linebreak\hspace*{5ex}$&& ( xTicksToWait != 0 ) ) );
     }
     #endif
  
@@ -500,10 +373,14 @@ Queue_t * const pxQueue = xQueue;
 
 //}
 
- * マクロは何もしない
+ここまでのマクロは何もしない。
 
-//listnum[xQueueSemaphoreTake_2][queue.c]{
-    /*lint -save -e904 This function relaxes the coding standard somewhat to allow return
+//listnum[xQueueSemaphoreTake_2][queue.c::xQueueSemaphoreTake, 2/2]{
+BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
+    ...
+
+    /*lint -save -e904 This function relaxes the coding standard somewhat to @<embed>$|latex|\linebreak\hspace*{5ex}$allow return
     statements within the function itself.  This is done in the interest
     of execution time efficiency. */
     for( ;; )
@@ -530,7 +407,7 @@ Queue_t * const pxQueue = xQueue;
                     {
                         /* Record the information required to implement
                         priority inheritance should it become necessary. */
-                        pxQueue->u.xSemaphore.xMutexHolder = pvTaskIncrementMutexHeldCount();
+                        pxQueue->u.xSemaphore.xMutexHolder = @<embed>$|latex|\linebreak\hspace*{5ex}$pvTaskIncrementMutexHeldCount();
                     }
             ...
 //}
@@ -544,10 +421,12 @@ Queue_t * const pxQueue = xQueue;
 
  * 一旦無視
 
-//listnum[xQueueSemaphoreTake_3][queue.c]{
-                    ... 
+//listnum[xQueueSemaphoreTake_3][queue.c::xQueueSemaphoreTake(), 3/3]{
+BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
+    ...
 
-                        pxQueue->u.xSemaphore.xMutexHolder = pvTaskIncrementMutexHeldCount();
+                        pxQueue->u.xSemaphore.xMutexHolder = @<embed>$|latex|\linebreak\hspace*{5ex}$pvTaskIncrementMutexHeldCount();
                     }
                     else
                     {
@@ -558,9 +437,9 @@ Queue_t * const pxQueue = xQueue;
 
                 /* Check to see if other tasks are blocked waiting to give the
                 semaphore, and if so, unblock the highest priority such task. */
-                if( listLIST_IS_EMPTY( &( pxQueue->xTasksWaitingToSend ) ) == pdFALSE )
+                if( listLIST_IS_EMPTY( @<embed>$|latex|\linebreak\hspace*{5ex}$&( pxQueue->xTasksWaitingToSend ) ) == pdFALSE )
                 {
-                    if( xTaskRemoveFromEventList( &( pxQueue->xTasksWaitingToSend ) ) != pdFALSE )
+                    if( xTaskRemoveFromEventList( @<embed>$|latex|\linebreak\hspace*{5ex}$&( pxQueue->xTasksWaitingToSend ) ) != pdFALSE )
                     {
                         queueYIELD_IF_USING_PREEMPTION();
                     }
@@ -588,7 +467,7 @@ Queue_t * const pxQueue = xQueue;
 * これはイベントリストへの排他アクセスを意味し、それが保証される。
 * この関数は、チェックが既に為され、pxEventListがカラでないことを確認していることを仮定している。
 
-//listnum[xTaskRemoveFromEventList, 1/2][task.c]{
+//listnum[xTaskRemoveFromEventList, 1/2][task.c::xTaskRemoveFromEventList()]{
 BaseType_t xTaskRemoveFromEventList( const List_t * const pxEventList )
 {
 TCB_t *pxUnblockedTCB;
@@ -611,10 +490,10 @@ BaseType_t xReturn;
     ...
 //}
 
-//listnum[xTaskRemoveFromEventList, 2/2][task.c]{
+//listnum[xTaskRemoveFromEventList_2][task.c::xTaskRemoveFromEventList, 2/2]{
     ...
 
-    pxUnblockedTCB = listGET_OWNER_OF_HEAD_ENTRY( pxEventList ); /*lint !e9079 void * is used as this macro is used with timers and co-routines too.  Alignment is known to be fine as the type of the pointer stored and retrieved is the same. */
+    pxUnblockedTCB = listGET_OWNER_OF_HEAD_ENTRY( pxEventList ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9079 void * is used as this macro is used with timers and co-routines too.  @<embed>$|latex|\linebreak\hspace*{5ex}$Alignment is known to be fine as the type of the pointer stored and retrieved is the same. */
     configASSERT( pxUnblockedTCB );
     ( void ) uxListRemove( &( pxUnblockedTCB->xEventListItem ) );
 
@@ -641,7 +520,7 @@ BaseType_t xReturn;
     {
         /* The delayed and ready lists cannot be accessed, so hold this task
         pending until the scheduler is resumed. */
-        vListInsertEnd( &( xPendingReadyList ), &( pxUnblockedTCB->xEventListItem ) );
+        vListInsertEnd( @<embed>$|latex|\linebreak\hspace*{5ex}$&( xPendingReadyList ), &( pxUnblockedTCB->xEventListItem ) );
     }
 
     if( pxUnblockedTCB->uxPriority > pxCurrentTCB->uxPriority )
@@ -670,7 +549,19 @@ BaseType_t xReturn;
  * ただし、xHigherPriorityTaskWokenパラメータを使ってないので実行は保留される
 
 
-//listnum[xQueueSemaphoreTake_4][queue.c]{
+//listnum[xQueueSemaphoreTake_4][queue.c::xQueueSemaphoreTake, 4/4]{
+BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
+    ...
+
+        taskENTER_CRITICAL();
+        {
+            ...
+
+            if( uxSemaphoreCount > ( UBaseType_t ) 0 )
+            {
+                ...
+            }
             else
             {
                 if( xTicksToWait == ( TickType_t ) 0 )
@@ -718,7 +609,9 @@ BaseType_t xReturn;
  * セマフォ取得待ちの他のタスクがいないときの処理
 
 
-//listnum[xQueueSemaphoreTake_5][queue.c]{
+//listnum[xQueueSemaphoreTake_5][queue.c::xQueueSemaphoreTake(), 5/6]{
+BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
         ...
 
         /* Update the timeout state to see if it has expired yet. */
@@ -738,7 +631,7 @@ BaseType_t xReturn;
                     {
                         taskENTER_CRITICAL();
                         {
-                            xInheritanceOccurred = xTaskPriorityInherit( pxQueue->u.xSemaphore.xMutexHolder );
+                            xInheritanceOccurred = xTaskPriorityInherit( @<embed>$|latex|\linebreak\hspace*{5ex}$pxQueue->u.xSemaphore.xMutexHolder );
                         }
                         taskEXIT_CRITICAL();
                     }
@@ -749,7 +642,7 @@ BaseType_t xReturn;
                 }
                 #endif
 
-                vTaskPlaceOnEventList( &( pxQueue->xTasksWaitingToReceive ), xTicksToWait );
+                vTaskPlaceOnEventList( @<embed>$|latex|\linebreak\hspace*{5ex}$&( pxQueue->xTasksWaitingToReceive ), xTicksToWait );
                 prvUnlockQueue( pxQueue );
                 if( xTaskResumeAll() == pdFALSE )
                 {
@@ -767,7 +660,14 @@ BaseType_t xReturn;
                 prvUnlockQueue( pxQueue );
                 ( void ) xTaskResumeAll();
             }
-        }
+
+    ...
+//}
+
+//listnum[xQueueSemaphoreTake_6][queue.c::xQueueSemaphoreTake(), 6/6]{
+BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
+        ...
         else
         {
             /* Timed out. */
@@ -796,8 +696,8 @@ BaseType_t xReturn;
                             has timed out the priority should be disinherited
                             again, but only as low as the next highest priority
                             task that is waiting for the same mutex. */
-                            uxHighestWaitingPriority = prvGetDisinheritPriorityAfterTimeout( pxQueue );
-                            vTaskPriorityDisinheritAfterTimeout( pxQueue->u.xSemaphore.xMutexHolder, uxHighestWaitingPriority );
+                            uxHighestWaitingPriority = @<embed>$|latex|\linebreak\hspace*{5ex}$prvGetDisinheritPriorityAfterTimeout( pxQueue );
+                            vTaskPriorityDisinheritAfterTimeout( @<embed>$|latex|\linebreak\hspace*{5ex}$pxQueue->u.xSemaphore.xMutexHolder, uxHighestWaitingPriority );
                         }
                         taskEXIT_CRITICAL();
                     }

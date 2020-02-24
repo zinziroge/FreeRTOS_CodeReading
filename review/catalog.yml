@@ -1,12 +1,15 @@
 PREDEF:
 
 CHAPS:
-  - rtos
+  - first.re
+  - rtos.re
+  - code_reading_rule.re
+  - code_format.re
+  - data_structure.re
   - FreeRTOS_SrcCodeReading.re
-    - code_reading_rule.re
-    - code_format.re
-    - data_structure.re
-    - semaphore.re
+  - semaphore.re
+  - last.re
+
 APPENDIX:
   - appendix.re
 

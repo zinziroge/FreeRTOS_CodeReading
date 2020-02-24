@@ -2,3 +2,8 @@
 doxygen/
 arduino_build_933832/
 review/doc/
+review/book.pdf
+review/reviewSample.re
+review/reviewSample2.re
+review/*.html
+review/_back
