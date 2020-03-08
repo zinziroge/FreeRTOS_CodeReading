@@ -1,7 +1,8 @@
 = semaphore
 == Interrupts.ino
 
-次に example/Interrupts.ino で使用されているFreeRTOS API のソースコードを読み解いていく。
+この章では example/Interrupts.ino で使用されているFreeRTOS API のソースコードを読んでいきましょう。
+主にセマフォの実装を理解していきたいと思います。
 
 //listnum[Interrupts][example/Interrupts.ino]{
 /*
@@ -84,21 +85,25 @@ void TaskLed(void *pvParameters)
 }
 //}
 
-setup()関数のxTaskCreate()は既に説明済みなので除外。
-interruptHandler()の xSemaphoreCreateBinary()を見る。
+setup()関数のxTaskCreate()は既に説明済みなので説明から省きます。
+interruptHandler()の xSemaphoreCreateBinary()を見ていきます。
 
-//quote{
-xSemaphoreCreateBinary()
+== バイナリセマフォを作成する
 
-概要:
+xSemaphoreCreateBinary()はバイナリセマフォを作成し、セマフォが参照されるハンドラを返します。
 
-バイナリセマフォを作成し、セマフォが参照されるハンドラを返す。
-各バイナリセマフォは少量のRAMを必要とし、セマフォの状態保持するのに使用される。
-バイナリセマフォが xSemaphoreCreateBinary() を使用して作成された場合、必要なRAMは自動的にFreeRTOSのヒープに割り当てられる。
-バイナリセマフォが xSemaphoreCreateBinaryStatic() を使用して作成された場合、必要なRAMはアプリケーション作成者によって提供され、
-追加パラメータを必要とするが、コンパイル時に静的にRAMが割り当てられる。
-セマフォは'カラ'状態で作成され、セマフォは xSemaphoreTake()関数を使って取得される前に、まず最初に与えられる必要がある。
-//}
+#@# //quote{
+#@# xSemaphoreCreateBinary()
+#@# 
+#@# 概要:
+#@# 
+#@# バイナリセマフォを作成し、セマフォが参照されるハンドラを返す。
+#@# 各バイナリセマフォは少量のRAMを必要とし、セマフォの状態保持するのに使用される。
+#@# バイナリセマフォが xSemaphoreCreateBinary() を使用して作成された場合、必要なRAMは自動的にFreeRTOSのヒープに割り当てられる。
+#@# バイナリセマフォが xSemaphoreCreateBinaryStatic() を使用して作成された場合、必要なRAMはアプリケーション作成者によって提供され、
+#@# 追加パラメータを必要とするが、コンパイル時に静的にRAMが割り当てられる。
+#@# セマフォは'カラ'状態で作成され、セマフォは xSemaphoreTake()関数を使って取得される前に、まず最初に与えられる必要がある。
+#@# //}
 
 //listnum[xSemaphoreCreateBinary][semphr.h]{
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
@@ -106,7 +111,8 @@ xSemaphoreCreateBinary()
 #endif
 //}
 
-configSUPPORT_DYNAMIC_ALLOCATION は 1 なので、xQueueGenericCreate() を読んでいきます。
+configSUPPORT_DYNAMIC_ALLOCATION は 1 です。
+xSemaphoreCreateBinary() は xQueueGenericCreate()として別名定義されています。
 xQueueGenericCreate() はコードを既に読んでいるので、セマフォに関係のある所をおさらいしてみます。
 
 //listnum[xQueueGenericCreate_1][queue.c, 1/2]{
@@ -181,20 +187,20 @@ xQueueGenericCreate() はコードを既に読んでいるので、セマフォ�
     }
 //}
 
- * Queueのメモリ確保
- ** xQueueSizeInBytesはQueueのデータを保持する部分のメモリサイズ(バイト)。
- ** pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
- ** Queue_t構造体のアライメントを満たすことを保証する必要がある(int8_t*)
- ** サイズが同じか大きければ型キャストは安全、 
- ** Queue_t構造体のサイズ + xQueueSizeInBytes のサイズだけmallocして、Queue_t構造体のポインタを取得
- ** mallocに成功していれば、pucQueueStorageに今取得したQueue_tを設定してポインタを進める
+#@# * Queueのメモリ確保
+#@# ** xQueueSizeInBytesはQueueのデータを保持する部分のメモリサイズ(バイト)。
+#@# ** pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
+#@# ** Queue_t構造体のアライメントを満たすことを保証する必要がある(int8_t*)
+#@# ** サイズが同じか大きければ型キャストは安全、 
+#@# ** Queue_t構造体のサイズ + xQueueSizeInBytes のサイズだけmallocして、Queue_t構造体のポインタを取得
+#@# ** mallocに成功していれば、pucQueueStorageに今取得したQueue_tを設定してポインタを進める
 
- * Queueの初期化
-//listnum[prvInitialiseNewQueue_1][queue.c, 1/2]{
-static void prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$uint8_t *pucQueueStorage, const uint8_t ucQueueType, Queue_t *pxNewQueue )
-{
-    ...
-//}
+#@#  * Queueの初期化
+#@# //listnum[prvInitialiseNewQueue_1][queue.c, 1/2]{
+#@# static void prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$uint8_t *pucQueueStorage, const uint8_t ucQueueType, Queue_t *pxNewQueue )
+#@# {
+#@#     ...
+#@# //}
 
  * 引数の値は以下のとおりである。
  * uxQueueLength = 1, uxItemSize = 0, ucQueueType = queueQUEUE_TYPE_BINARY_SEMAPHORE
@@ -204,7 +210,10 @@ static void prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$const
  * pcHeadは新規キューのストレージ領域の先頭のポインタ。サイズがゼロなのでNULLでもよさそうだが、NULLはmutexとして使うことを意味するのでそう設定しない。
  * Queueの長さはセマフォなので1。
 
-//listnum[Interrupts_2][example/Interrupts.ino]{
+== セマフォを与える
+
+
+//listnum[Interrupts_2][example/Interrupts.ino:interruptHandler()]{
 void interruptHandler() {
   /**
    * Give semaphore in the interrupt handler
@@ -215,6 +224,9 @@ void interruptHandler() {
 }
 //}
 
+interruptHandler()は割り込みハンドラーで、ピン2がLOWになったときに割り込みが発生します。
+xSemaphoreGiveFromISR()で割り込みからセマフォを取得します。
+
 //quote{
 xSemaphoreGiveFromISR(interruptSemaphore, NULL);
 
@@ -224,13 +236,13 @@ ISR(Interrupt Service Routine)で使用できるバージョンの xSemaphoreGiv
 xSemaphoreGive() とは違い、xSemaphoreGiveFromISR() は特定されたブロック時間を許可しない。
 //}
 
- * セマフォのリリース（割り込み処理からセマフォを与える）
-
 //listnum[xSemaphoreGiveFromISR][semphr.h]{
 #define xSemaphoreGiveFromISR( xSemaphore, pxHigherPriorityTaskWoken )    @<embed>$|latex|\linebreak\hspace*{5ex}$xQueueGiveFromISR( ( QueueHandle_t ) ( xSemaphore ), ( pxHigherPriorityTaskWoken ) )
 //}
 
- * キューで実装されている
+セマフォ操作の他の関数同様にキューで実装されています。
+xQueueGiveFromISR()を読んでいきましょう。
+名前から想像されるとおり、割り込みからセマフォを与える関数です。
 
 //listnum[xQueueGiveFromISR_1][queue.c, 1/2]{
 BaseType_t xQueueGiveFromISR( @<embed>$|latex|\linebreak\hspace*{5ex}$QueueHandle_t xQueue, BaseType_t * const pxHigherPriorityTaskWoken )
@@ -322,7 +334,11 @@ BaseType_t xQueueGiveFromISR( @<embed>$|latex|\linebreak\hspace*{5ex}$QueueHandl
  * メッセージ受け取り待ちのタスクが存在し、受け取り状態に遷移出来たら、コンテキストスイッチを行うように促す
 
 
-//listnum[TaskLed][Interrupts.ino]{
+== セマフォを取得する
+
+Interrupts.ino に戻ってきました。TaskLed()を読んでいきましょう。
+
+//listnum[TaskLed][Interrupts.ino::TaskLed()]{
 void TaskLed(void *pvParameters)
 {
   (void) pvParameters;
@@ -330,21 +346,29 @@ void TaskLed(void *pvParameters)
   pinMode(LED_BUILTIN, OUTPUT);
 
   for (;;) {
+    /**
+     * Take the semaphore.
+     * https://www.freertos.org/a00122.html
+     */
     if (xSemaphoreTake(interruptSemaphore, portMAX_DELAY) == pdPASS) {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
+    
+  }
+}
 //}
 
- * セマフォを取得出来たらdigitalWrite()して、LED表示をトグルさせる。
-
+xSemaphoreTake()でセマフォを取得出来たら、LED_BUILTINポートの信号値をリードして、反転させて出力させることで、LED表示をトグルさせています。
+xSemaphoreTake()を見ていきましょう。
 
 //listnum[xSemaphoreTake][semphr.c::xSemaphoreTake()]{
 #define xSemaphoreTake( xSemaphore, xBlockTime )        @<embed>$|latex|\linebreak\hspace*{5ex}$xQueueSemaphoreTake( ( xSemaphore ), ( xBlockTime ) )
 //}
 
-セマフォ取得APIもキューで実装されている。
+xSemaphoreTake()はxQueueSemaphoreTake()の別名定義で、
+キューで実装されていることがわかります。xQueueSemaphoreTake()を読んでいきましょう。
 
-//listnum[xQueueSemaphoreTake_1][queue.c::xQueueSemaphoreTake(), 1/2]{
+//listnum[xQueueSemaphoreTake_1][queue.c::xQueueSemaphoreTake(), 1/6]{
 BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 {
 BaseType_t xEntryTimeSet = pdFALSE;
@@ -371,11 +395,12 @@ Queue_t * const pxQueue = xQueue;
  
     ...
 
+}
 //}
 
-ここまでのマクロは何もしない。
+ここまでのマクロは無効なのでここまでは特に何も実行しません。
 
-//listnum[xQueueSemaphoreTake_2][queue.c::xQueueSemaphoreTake, 2/2]{
+//listnum[xQueueSemaphoreTake_2][queue.c::xQueueSemaphoreTake, 2/6]{
 BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 {
     ...
@@ -410,6 +435,8 @@ BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
                         pxQueue->u.xSemaphore.xMutexHolder = @<embed>$|latex|\linebreak\hspace*{5ex}$pvTaskIncrementMutexHeldCount();
                     }
             ...
+
+}
 //}
 
  * セマフォ取得待ちの他のタスクがいるときの処理
@@ -421,7 +448,7 @@ BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 
  * 一旦無視
 
-//listnum[xQueueSemaphoreTake_3][queue.c::xQueueSemaphoreTake(), 3/3]{
+//listnum[xQueueSemaphoreTake_3][queue.c::xQueueSemaphoreTake(), 3/6]{
 BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 {
     ...
@@ -461,11 +488,11 @@ BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
  * セマフォを送信しようとしてブロックされているタスクがあれば（キューがカラでなければ）、
    イベントリストからそのタスクを削除
 
-* ISR内のクリティカルセクションから呼び出しできる
-* イベントリストは優先度順に並び変えされているので、最も優先度の高いと分かり、削除される。遅延リストからTCBを削除し、実行待ちリストに追加する。
-* イベントがロックされたキューに対するものである場合は、この関数は決して呼ばれない。キューのロック・カウント がその代わりに修正される。
-* これはイベントリストへの排他アクセスを意味し、それが保証される。
-* この関数は、チェックが既に為され、pxEventListがカラでないことを確認していることを仮定している。
+ * ISR内のクリティカルセクションから呼び出しできる
+ * イベントリストは優先度順に並び変えされているので、最も優先度の高いと分かり、削除される。遅延リストからTCBを削除し、実行待ちリストに追加する。
+ * イベントがロックされたキューに対するものである場合は、この関数は決して呼ばれない。キューのロック・カウント がその代わりに修正される。
+ * これはイベントリストへの排他アクセスを意味し、それが保証される。
+ * この関数は、チェックが既に為され、pxEventListがカラでないことを確認していることを仮定している。
 
 //listnum[xTaskRemoveFromEventList, 1/2][task.c::xTaskRemoveFromEventList()]{
 BaseType_t xTaskRemoveFromEventList( const List_t * const pxEventList )
@@ -549,7 +576,7 @@ BaseType_t xReturn;
  * ただし、xHigherPriorityTaskWokenパラメータを使ってないので実行は保留される
 
 
-//listnum[xQueueSemaphoreTake_4][queue.c::xQueueSemaphoreTake, 4/4]{
+//listnum[xQueueSemaphoreTake_4][queue.c::xQueueSemaphoreTake, 4/6]{
 BaseType_t xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
 {
     ...
