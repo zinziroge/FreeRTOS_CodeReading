@@ -1,4 +1,4 @@
-= semaphore
+= ソースコードリーディング その2 ～セマフォ～
 == Interrupts.ino
 
 この章では example/Interrupts.ino で使用されているFreeRTOS API のソースコードを読んでいきましょう。
@@ -115,78 +115,78 @@ configSUPPORT_DYNAMIC_ALLOCATION は 1 です。
 xSemaphoreCreateBinary() は xQueueGenericCreate()として別名定義されています。
 xQueueGenericCreate() はコードを既に読んでいるので、セマフォに関係のある所をおさらいしてみます。
 
-//listnum[xQueueGenericCreate_1][queue.c, 1/2]{
-    QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
-    {
-    Queue_t *pxNewQueue;
-    size_t xQueueSizeInBytes;
-    uint8_t *pucQueueStorage;
-
-        configASSERT( uxQueueLength > ( UBaseType_t ) 0 );
-
-        ...
-//}
-
- * 引数の値は以下のとおりである。
- * uxQueueLength = 1, uxItemSize = 0, ucQueueType = queueQUEUE_TYPE_BINARY_SEMAPHORE
- * xQueueSizeInBytes = 1
-
-//listnum[xQueueGenericCreate_2][queue.c, 2/2]{
-    QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
-    {
-        ...
-
-        if( uxItemSize == ( UBaseType_t ) 0 )
-        {
-            /* There is not going to be a queue storage area. */
-            xQueueSizeInBytes = ( size_t ) 0;
-        }
-        else
-        {
-            /* Allocate enough space to hold the maximum number of items that
-            can be in the queue at any time. */
-            xQueueSizeInBytes = @<embed>$|latex|\linebreak\hspace*{5ex}$( size_t ) ( uxQueueLength * uxItemSize ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e961 MISRA exception as the casts are only redundant for some ports. */
-        }
-
-        /* Allocate the queue and storage area.  Justification for MISRA
-        deviation as follows:  pvPortMalloc() always ensures returned memory
-        blocks are aligned per the requirements of the MCU stack.  In this case
-        pvPortMalloc() must return a pointer that is guaranteed to meet the
-        alignment requirements of the Queue_t structure - which in this case
-        is an int8_t *.  Therefore, whenever the stack alignment requirements
-        are greater than or equal to the pointer to char requirements the cast
-        is safe.  In other cases alignment requirements are not strict (one or
-        two bytes). */
-        pxNewQueue = @<embed>$|latex|\linebreak\hspace*{5ex}$( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
-
-        if( pxNewQueue != NULL )
-        {
-            /* Jump past the queue structure to find the location of the queue
-            storage area. */
-            pucQueueStorage = ( uint8_t * ) pxNewQueue;
-            pucQueueStorage += sizeof( Queue_t ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists @<embed>$|latex|\linebreak\hspace*{5ex}$conveying intent. */
-
-            #if( configSUPPORT_STATIC_ALLOCATION == 1 )
-            {
-                /* Queues can be created either statically or dynamically, so
-                note this task was created dynamically in case it is later
-                deleted. */
-                pxNewQueue->ucStaticallyAllocated = pdFALSE;
-            }
-            #endif /* configSUPPORT_STATIC_ALLOCATION */
-
-            prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
-        }
-        else
-        {
-            traceQUEUE_CREATE_FAILED( ucQueueType );
-            mtCOVERAGE_TEST_MARKER();
-        }
-
-        return pxNewQueue;
-    }
-//}
-
+#@# //listnum[xQueueGenericCreate_1][queue.c, 1/2]{
+#@#     QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
+#@#     {
+#@#     Queue_t *pxNewQueue;
+#@#     size_t xQueueSizeInBytes;
+#@#     uint8_t *pucQueueStorage;
+#@# 
+#@#         configASSERT( uxQueueLength > ( UBaseType_t ) 0 );
+#@# 
+#@#         ...
+#@# //}
+#@# 
+#@#  * 引数の値は以下のとおりである。
+#@#  * uxQueueLength = 1, uxItemSize = 0, ucQueueType = queueQUEUE_TYPE_BINARY_SEMAPHORE
+#@#  * xQueueSizeInBytes = 1
+#@# 
+#@# //listnum[xQueueGenericCreate_2][queue.c, 2/2]{
+#@#     QueueHandle_t xQueueGenericCreate(@<embed>$|latex|\linebreak\hspace*{5ex}$ const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType )
+#@#     {
+#@#         ...
+#@# 
+#@#         if( uxItemSize == ( UBaseType_t ) 0 )
+#@#         {
+#@#             /* There is not going to be a queue storage area. */
+#@#             xQueueSizeInBytes = ( size_t ) 0;
+#@#         }
+#@#         else
+#@#         {
+#@#             /* Allocate enough space to hold the maximum number of items that
+#@#             can be in the queue at any time. */
+#@#             xQueueSizeInBytes = @<embed>$|latex|\linebreak\hspace*{5ex}$( size_t ) ( uxQueueLength * uxItemSize ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e961 MISRA exception as the casts are only redundant for some ports. */
+#@#         }
+#@# 
+#@#         /* Allocate the queue and storage area.  Justification for MISRA
+#@#         deviation as follows:  pvPortMalloc() always ensures returned memory
+#@#         blocks are aligned per the requirements of the MCU stack.  In this case
+#@#         pvPortMalloc() must return a pointer that is guaranteed to meet the
+#@#         alignment requirements of the Queue_t structure - which in this case
+#@#         is an int8_t *.  Therefore, whenever the stack alignment requirements
+#@#         are greater than or equal to the pointer to char requirements the cast
+#@#         is safe.  In other cases alignment requirements are not strict (one or
+#@#         two bytes). */
+#@#         pxNewQueue = @<embed>$|latex|\linebreak\hspace*{5ex}$( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
+#@# 
+#@#         if( pxNewQueue != NULL )
+#@#         {
+#@#             /* Jump past the queue structure to find the location of the queue
+#@#             storage area. */
+#@#             pucQueueStorage = ( uint8_t * ) pxNewQueue;
+#@#             pucQueueStorage += sizeof( Queue_t ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9016 Pointer arithmetic allowed on char types, especially when it assists @<embed>$|latex|\linebreak\hspace*{5ex}$conveying intent. */
+#@# 
+#@#             #if( configSUPPORT_STATIC_ALLOCATION == 1 )
+#@#             {
+#@#                 /* Queues can be created either statically or dynamically, so
+#@#                 note this task was created dynamically in case it is later
+#@#                 deleted. */
+#@#                 pxNewQueue->ucStaticallyAllocated = pdFALSE;
+#@#             }
+#@#             #endif /* configSUPPORT_STATIC_ALLOCATION */
+#@# 
+#@#             prvInitialiseNewQueue( @<embed>$|latex|\linebreak\hspace*{5ex}$uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
+#@#         }
+#@#         else
+#@#         {
+#@#             traceQUEUE_CREATE_FAILED( ucQueueType );
+#@#             mtCOVERAGE_TEST_MARKER();
+#@#         }
+#@# 
+#@#         return pxNewQueue;
+#@#     }
+#@# //}
+#@# 
 #@# * Queueのメモリ確保
 #@# ** xQueueSizeInBytesはQueueのデータを保持する部分のメモリサイズ(バイト)。
 #@# ** pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); @<embed>$|latex|\linebreak\hspace*{5ex}$/*lint !e9087 !e9079 see comment above. */
@@ -244,7 +244,7 @@ xSemaphoreGive() とは違い、xSemaphoreGiveFromISR() は特定されたブロ
 xQueueGiveFromISR()を読んでいきましょう。
 名前から想像されるとおり、割り込みからセマフォを与える関数です。
 
-//listnum[xQueueGiveFromISR_1][queue.c, 1/2]{
+//listnum[xQueueGiveFromISR_1][queue.cx::QueueGiveFromISR, 1/2]{
 BaseType_t xQueueGiveFromISR( @<embed>$|latex|\linebreak\hspace*{5ex}$QueueHandle_t xQueue, BaseType_t * const pxHigherPriorityTaskWoken )
 {
 BaseType_t xReturn;

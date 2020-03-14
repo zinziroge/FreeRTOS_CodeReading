@@ -1,4 +1,4 @@
-= Blink_AnalogRead.ino
+= ソースコードリーディング その１～タスク～
 
 #@# ここからソースコードリーディング ##########################################################
 
@@ -106,7 +106,9 @@ int main(void)
 #@# なぜ、variantHook.cpp から読み始めるか
 #@# https://feilipu.me/2015/11/24/arduino_freertos/ に
 
+init()は
 C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\wiring.c:init()
+に記載されていますRTOSとは直接関係ないのでこの本では飛ばします。
 
 それではinitVariant()関数から読んでいきましょう。
 
@@ -126,7 +128,7 @@ void initVariant(void)
 https://gcc.gnu.org/onlinedocs/gcc/AVR-Function-Attributes.html によると、
 OS_mainアトリビュートを宣言すると、この関数に入るときには割り込みが禁止されていることが保証されていて、
 スタックへの退避や復帰が行われないので、スタック領域の使用量を増やさない効果があるようです。
-USBCON は未定義です。setup()は、Arduino スケッチファイル(.ino) でユーザが記述するsetup()関数です。
+USBCON は未定義です。setup()は、Arduino スケッチファイル(.ino) でユーザが記述するお馴染みのsetup()関数です。
 
 次はvTaskStartScheduler()のコードを見ていきましょう。
 
@@ -180,7 +182,7 @@ BaseType_t xReturn;
 //}
 
 BaseType_t は、ハードウェアアーキテクチャで最も効率的に扱えるデータタイプです。
-Arduino Unoで使用されているMPUであるATMega328pでは、singed char(portmacro.hで定義されている)と定義されています。
+Arduino Unoで使用されているMPUであるATMega328pでは、32行目のsinged char(portmacro.hで定義されている)と定義されています。
 
 configSUPPORT_STATIC_ALLOCATION は 0 なので、 #else節が有効になります。
 (以降、特に断りなく#if definedで無効なブロックは引用せず省略する場合があります。)
@@ -192,7 +194,7 @@ portで始まるマクロ変数は、portmacro.hで定義されています。
 
 == タスク作成API xTaskCreate() 前半部
 
-タスク作成のAPIである`xTaskCreate()`のコードを読んでいきます。
+タスク作成のAPIであるxTaskCreate()のコードを読んでいきます。
 長いので2つに分けて読んでいきます。まず前半部です。
 
 //listnum[xTaskCreate_1][tasks.c::BaseType_t xTaskCreate(), 1/2][c]{
@@ -225,7 +227,7 @@ portで始まるマクロ変数は、portmacro.hで定義されています。
 //}
 
 TCB_t は、データ構造で説明済みのタスク制御バッファー（Task Control Buffer）のための構造体です。
-portSTACK_GROWTH は -1なので、#else節が有効です。 スタックのアドレスは小さい方に伸びていきます。
+portSTACK_GROWTH は -1なので、18行目の#else節が有効です。 スタックのアドレスは小さい方に伸びていきます。
 StackType_t は uint8_t です(portmacro.hで定義されています)。
 usStackDepth はこの関数の引数で、configMINIMAL_STACK_SIZEが値渡しされています。
 configMINIMAL_STACK_SIZEの値は192であり、StackType_t は uint8_t なので 192byte のスタック領域を確保します。
@@ -255,7 +257,7 @@ malloc()でヒープ領域からメモリを確保する前に vTaskSuspendAll()
 vTaskSuspendAll()、xTaskResumeAll() はこの関数の説明のあとで読んでいきます。
 
 malloc()は stdlib.h で定義されています。
-malloc()の実装までは追いませんが、malloc動画(https://youtu.be/0-vWT-t0UHg)などを参考にすると よいかもしれません。
+malloc()の実装までは追いませんが、malloc動画(The 67th Yokohama kernel reading party(https://youtu.be/0-vWT-t0UHg))などを参考にすると よいかもしれません。
 #@# * traceMALLOC( pvReturn, xWantedSize ); はどこで定義されている？ <!-- TODO -->
 
 ヒープ関連のソースファイルは今回参照した heap_3.c の他に heap_1.c, heap_2.c, heap_4.c が含まれる場合があるようです。
@@ -284,7 +286,7 @@ void vTaskSuspendAll( void )
 
 コードは1行だけですが、長めのコメントとURIが記載されています。
 コメントによると、ここの記述はクリティカルセクションにする必要がないと説明しているようです。
-クリティカルセクション（割り込み禁止）は、このあと読んでいくxTaskResumeAll()でも出てきますが、
+クリティカルセクションは、このあと読んでいくxTaskResumeAll()でも出てきますが、割り込み禁止の期間で、
 taskENTER_CRITICAL() と taskEXIT_CRITICAL() でブロックを囲む必要があります。
 しかし、ここではそれが必要ないと説明しているようです。
 その理由が記載された http://goo.gl/wu4acr の内容を要約してみます。
@@ -389,7 +391,7 @@ __volatile__ は、volatileの別名定義です。
  ** それは、コンパイラにレジスタに保持されている全てのコンテンツを保持(退避)することを、アセンブラコード実行前に、強制する。アセンブラコード実行後に書き戻す。
  *** http://www.nongnu.org/avr-libc/user-manual/inline_asm.html
 
-次にportENTER_CRITICAL()と対になるtaskEXIT_CRITICAL()も見ていきましょう。
+portENTER_CRITICAL()と対になるtaskEXIT_CRITICAL()も見ていきましょう。
 
 //listnum[taskEXIT_CRITICAL][task.h.]{
 #define taskEXIT_CRITICAL()         portEXIT_CRITICAL()
@@ -462,7 +464,7 @@ BaseType_t xTaskResumeAll( void )
 }
 //}
 
-スケジューラがサスペンド状態でなく、かつ現在のタスク数がゼロより多いときに、タスク毎にサスペンド状態にしていきます。
+スケジューラタスクがサスペンド状態でなく、かつ現在のタスク数がゼロより多いときに、タスク毎にサスペンド状態にしていきます。
 #@# ペンディングレディーリストとは？
 ペンディング・レディーリストとは、スケジューラがサスペンド中にレディー状態になったタスクのリストです。
 それらのタスクをレディーリスト(レディー状態）に移動(遷移)させます。
@@ -712,7 +714,7 @@ xTaskCreate()の後半部を見ていきます。
 その領域をタスク制御バッファのスタックとしてpxStackを割り当てています。
 タスク制御バッファを作成できなかった場合は、確保したスタック領域も開放しています。
 
-結局、xTaskCreate()は前半部でタスク制御バッファの領域を確保し、後半部でそのタスクが使用するスタック領域を確保しています。
+結局、xTaskCreate()は前半部でタスク制御バッファの領域を確保し(13行目)、後半部でそのタスクが使用するスタック領域を確保(18行目)しています。
 
 xTaskCreate()も読み終わったので、最初に見ていた vTaskStartScheduler() に戻り続きを見ていきましょう。
 
@@ -758,6 +760,7 @@ BaseType_t xReturn = pdFAIL;
 //}
 
 コメントを見ると以下のことが書かれています。
+
  * この関数はスケジューラが始まったときに呼ばれる関数である。
  * タイマーサービスタスクによって使用されるインフラを検査する
  * タイマーサービスタスクが生成済みならば、初期化もすでに実施されているはずである
@@ -778,11 +781,11 @@ static void prvCheckForValidListAndQueue( void )
 }
 //}
 
-コメントによると、アクティブなタイマーがこのリストで管理される、とあります。
-タイマーは時間が切れる順に参照される、最も最初に切れるタイマーがリストの先頭にある
+コメントによると、アクティブなタイマーから参照されるリスト、このリストで管理される、とあります。
+タイマーは時間が切れる順に参照され、最も最初に切れるタイマーがリストの先頭にある
 
 また、taskENTER_CRITICAL() と taskEXIT_CRITICAL() で囲まれたブロックがでてきました。
-既に読んだこのブロック内では割り込みが禁止されています。
+既に読んだとおりこのブロック内では割り込みが禁止されています。
 このブロック内の処理を見ていきましょう。
 
 //listnum[prvCheckForValidListAndQueue_2][timer.c::prvCheckForValidListAndQueue, 2/3]{
@@ -835,12 +838,19 @@ static void prvCheckForValidListAndQueue( void )
 }
 //}
 
-configSUPPORT_STATIC_ALLOCATIONは0なので(FreeRTOSConfig.hで定義されている)、#else節だけ見ていきます。
+configSUPPORT_STATIC_ALLOCATIONは0なので(FreeRTOSConfig.hで定義されている)、15行目の#else節だけ見ていきます。
 タイマー用のキューxTimerQueueを作成しています。
 
 == キューの作成
 
 xQueueCreate() は xQueueGenericCreate() で別名定義されています。
+
+//listnum[xQueueGenericCreate][queue.h]{
+#if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
+    QueueHandle_t xQueueGenericCreate( @<embed>$|latex|\linebreak\hspace*{5ex}$const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, @<embed>$|latex|\linebreak\hspace*{5ex}$const uint8_t ucQueueType ) PRIVILEGED_FUNCTION;
+#endif
+//}
+
 xQueueGenericCreate() を見ていきましょう。
 uxQueueLength, uxItemSize の値は引き継がれますが、ucQueueType は queueQUEUE_TYPE_BASE が渡されます。
 
@@ -1118,7 +1128,7 @@ void vTaskStartScheduler( void )
 // System Tick - Scheduler timer
 // Use the Watchdog timer, and choose the rate at which scheduler interrupts will occur.
 
-#define portUSE_WDTO            WDTO_15MS    // portUSE_WDTO to use the Watchdog Timer for xTaskIncrementTick
+#define portUSE_WDTO            WDTO_15MS    @<embed>$|latex|\linebreak\hspace*{5ex}$// portUSE_WDTO to use the Watchdog Timer for xTaskIncrementTick
 
 /* Watchdog period options:     WDTO_15MS
                                 WDTO_30MS
@@ -1133,7 +1143,7 @@ void vTaskStartScheduler( void )
 
 //listnum[pdMS_TO_TICKS][projdef.h]{
 #ifndef pdMS_TO_TICKS
-    #define pdMS_TO_TICKS( xTimeInMs ) ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000 ) )
+    #define pdMS_TO_TICKS( xTimeInMs ) @<embed>$|latex|\linebreak\hspace*{5ex}$( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000 ) )
 #endif
 //}
 
@@ -1396,10 +1406,11 @@ BaseType_t xPortStartScheduler( void )
     return pdTRUE;
 }
 //}
- * __asm__ __volatile__ ( "ret" );
- ** returnじゃダメなのはなんで??? __asm__ __volatile__ ( "ret" );
 
-xPortStartScheduler()が読み終わったので、vTaskStartScheduler()に戻ってきました。
+スケジューラが動き出します。
+returnの前に __asm__ __volatile__ ( "ret" ) が記載されているので、
+この関数からvTaskStartScheduler()には戻りませんが、
+vTaskStartScheduler()の残りの部分も読んでみましょう。
 
 //listnum[vTaskStartScheduler_7][tasks.c::void vTaskStartScheduler( void ), 7/7]{
 void vTaskStartScheduler( void )
@@ -1412,16 +1423,13 @@ void vTaskStartScheduler( void )
 }
 //}
 
- * `INCLUDE_xTaskGetIdleTaskHandle` が`0`に設定されている時でも、コンパイラがワーニング(宣言されたが一度も使用されていない)を出さないように記載されている。
- * FreeRTOSの思想として、いろんなCPUに移植できるようにしているが、ノーエラー、ノーワーニングで提供する（要確認）
-
-ここまでで初期化完了
+ここまでで初期化完了です。
 
 #@# ここから .ino ファイルに戻る #########################################################
 
 == 終わりそうで終わらない
 
-example/Blink_AnalogRead.ino を改めてみてみる。ただし、コメントは適宜削除している。
+example/Blink_AnalogRead.ino を改めてみてみましょう。ただし、コメントは適宜削除しています。
 
 //listnum[Blink_AnalogRead_2][example/Blink_AnalogRead.ino]{
 #include <Arduino_FreeRTOS.h>
@@ -1491,7 +1499,7 @@ void TaskAnalogRead(void *pvParameters)  // This is a task.
 }
 //}
 
-まだコードを見ていないvTaskDelay()があるのでこれを読んでいきます。
+まだ63行目にコードを見ていないvTaskDelay()があるのでこれを読んでいきます。
 
 == vTaskDelay() ちょっと待ちます
 
@@ -1534,7 +1542,7 @@ vTaskSuspendAll() と xTaskResumeAll() で囲まれたブロックで実行さ�
 prvAddCurrentTaskToDelayedList() を見ていく。
 現在のタスクを遅延タスクリストに追加します。
 
-//listnum[prvAddCurrentTaskToDelayedList_1][tasks.c::prvAddCurrentTaskToDelayedList(), 1/2]{
+//listnum[prvAddCurrentTaskToDelayedList_1][tasks.c::prvAddCurrentTaskToDelayedList(), 1/4]{
 static void prvAddCurrentTaskToDelayedList( @<embed>$|latex|\linebreak\hspace*{5ex}$TickType_t xTicksToWait, const BaseType_t xCanBlockIndefinitely )
 {
 TickType_t xTimeToWake;
@@ -1576,7 +1584,7 @@ const TickType_t xConstTickCount = xTickCount;
 //}
 portRESET_READY_PRIORITY()は、なにも実行しない。
 
-//listnum[prvAddCurrentTaskToDelayedList_2][tasks.c::prvAddCurrentTaskToDelayedList(), 2/2]{
+//listnum[prvAddCurrentTaskToDelayedList_2][tasks.c::prvAddCurrentTaskToDelayedList(), 2/4]{
 static void prvAddCurrentTaskToDelayedList( @<embed>$|latex|\linebreak\hspace*{5ex}$TickType_t xTicksToWait, const BaseType_t xCanBlockIndefinitely )
 {
     ...
@@ -1599,43 +1607,43 @@ xTicksToWaitが最大値で、xCanBlockIndefinitelyがTrueなら、遅延タス�
 
 サスペンドタスクリストに現在のタスクを追加します。
 
-//listnum[vListInsertEnd][list.c::vListInsertEnd()]{
-void vListInsertEnd( List_t * const pxList, ListItem_t * const pxNewListItem )
-{
-ListItem_t * const pxIndex = pxList->pxIndex;
-
-    /* Only effective when configASSERT() is also defined, these tests may catch
-    the list data structures being overwritten in memory.  They will not catch
-    data errors caused by incorrect configuration or use of FreeRTOS. */
-    listTEST_LIST_INTEGRITY( pxList );
-    listTEST_LIST_ITEM_INTEGRITY( pxNewListItem );
-
-    /* Insert a new list item into pxList, but rather than sort the list,
-    makes the new list item the last item to be removed by a call to
-    listGET_OWNER_OF_NEXT_ENTRY(). */
-    pxNewListItem->pxNext = pxIndex;
-    pxNewListItem->pxPrevious = pxIndex->pxPrevious;
-
-    /* Only used during decision coverage testing. */
-    mtCOVERAGE_TEST_DELAY();
-
-    pxIndex->pxPrevious->pxNext = pxNewListItem;
-    pxIndex->pxPrevious = pxNewListItem;
-
-    /* Remember which list the item is in. */
-    pxNewListItem->pxContainer = pxList;
-
-    ( pxList->uxNumberOfItems )++;
-}
-//}
-
-//listnum[listTEST_LIST_ITEM_INTEGRITY][list.h::listTEST_LIST_ITEM_INTEGRITY()]{
-#if( configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES == 0 )
-    /* Define the macros to do nothing. */
-    ...
-    #define listTEST_LIST_ITEM_INTEGRITY( pxItem )
-    #define listTEST_LIST_INTEGRITY( pxList )
-//}
+#@# //listnum[vListInsertEnd][list.c::vListInsertEnd()]{
+#@# void vListInsertEnd( List_t * const pxList, ListItem_t * const pxNewListItem )
+#@# {
+#@# ListItem_t * const pxIndex = pxList->pxIndex;
+#@# 
+#@#     /* Only effective when configASSERT() is also defined, these tests may catch
+#@#     the list data structures being overwritten in memory.  They will not catch
+#@#     data errors caused by incorrect configuration or use of FreeRTOS. */
+#@#     listTEST_LIST_INTEGRITY( pxList );
+#@#     listTEST_LIST_ITEM_INTEGRITY( pxNewListItem );
+#@# 
+#@#     /* Insert a new list item into pxList, but rather than sort the list,
+#@#     makes the new list item the last item to be removed by a call to
+#@#     listGET_OWNER_OF_NEXT_ENTRY(). */
+#@#     pxNewListItem->pxNext = pxIndex;
+#@#     pxNewListItem->pxPrevious = pxIndex->pxPrevious;
+#@# 
+#@#     /* Only used during decision coverage testing. */
+#@#     mtCOVERAGE_TEST_DELAY();
+#@# 
+#@#     pxIndex->pxPrevious->pxNext = pxNewListItem;
+#@#     pxIndex->pxPrevious = pxNewListItem;
+#@# 
+#@#     /* Remember which list the item is in. */
+#@#     pxNewListItem->pxContainer = pxList;
+#@# 
+#@#     ( pxList->uxNumberOfItems )++;
+#@# }
+#@# //}
+#@# 
+#@# //listnum[listTEST_LIST_ITEM_INTEGRITY][list.h::listTEST_LIST_ITEM_INTEGRITY()]{
+#@# #if( configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES == 0 )
+#@#     /* Define the macros to do nothing. */
+#@#     ...
+#@#     #define listTEST_LIST_ITEM_INTEGRITY( pxItem )
+#@#     #define listTEST_LIST_INTEGRITY( pxList )
+#@# //}
 
 pxList がサスペンドタスクリスト、pxNewListItemが追加するタスクです。
 listTEST_LIST_INTEGRITY()、listTEST_LIST_ITEM_INTEGRITY()は何もしません。

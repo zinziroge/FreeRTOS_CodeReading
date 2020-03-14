@@ -82,7 +82,7 @@ FreeRTOSが管理するタスク以外にArduinoのスケッチファイルのlo
 
 
 === ソースコードファイル一覧
-Arduino Uno版のFreeRTOSに含まれるソースコードファイル名とその概要は次のとおりです。
+Arduino Uno版のFreeRTOSに含まれるソースコードファイル名とその概要を@<table>{file_list_summary}に示します。
 この本で扱うソースコードファイルと、ほとんどまたは全く扱わないものもあります。
 
 //table[file_list_summary][ファイル一覧と概要]{
@@ -119,7 +119,9 @@ variantHooks.cpp    	何らかの要因でフックされる処理。initVariant
 
 
 === 変数命名規則
+
 FreeRTOSの変数名の命名規則は次のとおりです。
+
  * 'c' : char
  * 's' : int16_t
  * 'x' : BaseType_t
@@ -131,7 +133,9 @@ FreeRTOSの変数名の命名規則は次のとおりです。
 
 
 === 関数命名規則
+
 FreeRTOSの関数名の命名規則は次のとおりです。
+
  * 'v' で始まる関数の戻り値は void
  * 'p' で始まる関数の戻り値は pointer
  * 'x' で始まる関数の戻り値は BaseType_t
